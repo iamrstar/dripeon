@@ -269,7 +269,7 @@ export default function ComingSoonOverlay() {
                   color: '#fff', textTransform: 'uppercase', marginRight: '4rem',
                   fontFamily: 'var(--font-display)', direction: 'ltr',
                 }}>
-                  ★ LIMITED EDITION &nbsp;&nbsp; ★ STREETWEAR &nbsp;&nbsp; ★ DRIPEON 2025 &nbsp;&nbsp; ★ DON'T MISS OUT &nbsp;&nbsp; ★ THE DRIP IS REAL &nbsp;&nbsp;
+                  ★ LIMITED EDITION &nbsp;&nbsp; ★ STREETWEAR &nbsp;&nbsp; ★ DRIPEON 2026 &nbsp;&nbsp; ★ DON'T MISS OUT &nbsp;&nbsp; ★ THE DRIP IS REAL &nbsp;&nbsp;
                 </span>
               ))}
             </div>
