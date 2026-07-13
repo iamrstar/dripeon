@@ -47,17 +47,17 @@ export default function ComingSoonOverlay() {
 
   const topPanel = {
     hidden: { y: '-100%' },
-    visible: { y: '0%', transition: { duration: 0.9, ease: [0.76, 0, 0.24, 1] } },
+    visible: { y: '0%', transition: { duration: 0.9, ease: [0.76, 0, 0.24, 1] as const } },
   };
   const bottomPanel = {
     hidden: { y: '100%' },
-    visible: { y: '0%', transition: { duration: 0.9, ease: [0.76, 0, 0.24, 1] } },
+    visible: { y: '0%', transition: { duration: 0.9, ease: [0.76, 0, 0.24, 1] as const } },
   };
   const fadeUp = {
     hidden: { opacity: 0, y: 40 },
     visible: (i: number) => ({
       opacity: 1, y: 0,
-      transition: { duration: 0.7, delay: 0.8 + i * 0.15, ease: [0.33, 1, 0.68, 1] }
+      transition: { duration: 0.7, delay: 0.8 + i * 0.15, ease: [0.33, 1, 0.68, 1] as const }
     }),
   };
 
