@@ -7,9 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/context/CartContext';
+import SearchOverlay from '@/components/SearchOverlay';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [expandedMobileMenu, setExpandedMobileMenu] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -126,7 +128,11 @@ export default function Navbar() {
                 {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
               </button>
             )}
-            <button aria-label="Search" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+            <button 
+              aria-label="Search" 
+              onClick={() => setSearchOpen(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
+            >
               <Search size={22} />
             </button>
             
@@ -283,6 +289,8 @@ export default function Navbar() {
           )}
         </AnimatePresence>
       </nav>
+
+      <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }

@@ -11,11 +11,18 @@ export async function GET(req: Request) {
     const category = searchParams.get("category");
     const featured = searchParams.get("featured");
     const ids = searchParams.get("ids");
+    const search = searchParams.get("search");
     const limit = parseInt(searchParams.get("limit") || "50");
 
     const filter: any = { isActive: true };
     if (category) filter.category = new RegExp(`^${category}$`, "i");
     if (featured === "true") filter.featured = true;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+      ];
+    }
     if (ids) {
       const idArray = ids.split(',');
       // Check if it's a valid ObjectId, otherwise it's a slug
