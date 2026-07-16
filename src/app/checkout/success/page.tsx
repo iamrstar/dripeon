@@ -43,9 +43,14 @@ function SuccessContent() {
         </div>
       )}
 
-      <Link href="/" className="btn-primary" style={{ width: '100%', padding: '1.2rem', fontSize: '1.2rem' }}>
-        BACK TO STORE
-      </Link>
+      <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+        <Link href="/profile/orders" className="btn-primary" style={{ flex: 1, padding: '1.2rem', fontSize: '1rem', backgroundColor: 'transparent', border: '1px solid var(--color-text)', color: 'var(--color-text)' }}>
+          VIEW MY ORDERS
+        </Link>
+        <Link href="/" className="btn-primary" style={{ flex: 1, padding: '1.2rem', fontSize: '1rem' }}>
+          BACK TO STORE
+        </Link>
+      </div>
     </div>
   );
 }

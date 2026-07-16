@@ -1,17 +1,50 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IProduct extends Document {
+export interface IReview extends Document {
+  user: mongoose.Types.ObjectId;
   name: string;
-  description: string;
-  price: number;
-  category: string;
-  subcategory: string;
-  images: string[];
-  stock: number;
-  featured?: boolean;
+  rating: number;
+  comment: string;
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface IProduct extends Document {
+  name: string;
+  slug: string;
+  description: string;
+  originalPrice: number;
+  salePrice: number;
+  discount: number;
+  category: string;
+  subcategory: string;
+  images: string[];
+  sizes: string[];
+  inventory?: Record<string, number>;
+  highlights: Record<string, string>;
+  sizeChart: Record<string, string>;
+  features: { title: string; desc: string }[];
+  careInstructions: string[];
+  modelInfo: string;
+  stock: number;
+  featured: boolean;
+  isActive: boolean;
+  reviews: IReview[];
+  averageRating: number;
+  numReviews: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ReviewSchema: Schema = new Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, required: true },
+  },
+  { timestamps: true }
+);
 
 const ProductSchema: Schema = new Schema(
   {
@@ -20,37 +53,115 @@ const ProductSchema: Schema = new Schema(
       required: [true, 'Please provide a product name'],
       trim: true,
     },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     description: {
       type: String,
       required: [true, 'Please provide a product description'],
     },
-    price: {
+    originalPrice: {
       type: Number,
-      required: [true, 'Please provide a product price'],
+      required: [true, 'Please provide original MRP'],
+    },
+    salePrice: {
+      type: Number,
+      required: [true, 'Please provide sale price'],
+    },
+    discount: {
+      type: Number,
+      default: 0,
     },
     category: {
       type: String,
-      required: [true, 'Please provide a category (e.g., Topwear)'],
+      required: [true, 'Please provide a category'],
+      enum: ['topwear', 'bottomwear', 'accessories'],
     },
     subcategory: {
       type: String,
-      required: [true, 'Please provide a subcategory (e.g., Oversized)'],
+      default: '',
     },
     images: {
       type: [String],
       required: true,
     },
+    sizes: {
+      type: [String],
+      default: [],
+    },
+    inventory: {
+      S: { type: Number, default: 0 },
+      M: { type: Number, default: 0 },
+      L: { type: Number, default: 0 },
+      XL: { type: Number, default: 0 },
+      XXL: { type: Number, default: 0 },
+    },
+    highlights: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    sizeChart: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    features: [
+      {
+        title: { type: String },
+        desc: { type: String },
+      },
+    ],
+    careInstructions: {
+      type: [String],
+      default: [
+        'Machine wash cold with like colors',
+        'Do not bleach',
+        'Tumble dry low',
+        'Iron on low heat if needed',
+        'Do not dry clean',
+      ],
+    },
+    modelInfo: {
+      type: String,
+      default: '',
+    },
     stock: {
       type: Number,
-      required: true,
+      required: [true, 'Please provide available stock'],
       default: 0,
     },
     featured: {
       type: Boolean,
       default: false,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    reviews: [ReviewSchema],
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+    numReviews: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
+
+// Auto-calculate discount before saving
+ProductSchema.pre('save', function (next) {
+  if (this.originalPrice && this.salePrice) {
+    this.discount = Math.round(((this.originalPrice as number) - (this.salePrice as number)) / (this.originalPrice as number) * 100);
+  }
+  next();
+});
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

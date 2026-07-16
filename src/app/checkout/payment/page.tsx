@@ -4,15 +4,20 @@ import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Loader from "@/components/Loader";
+import { ShieldCheck, Lock, CreditCard, ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function PaymentPage() {
-  const { cartTotal, cartItems, clearCart } = useCart();
+  const { cartTotal, cartItems, clearCart, discountAmount, appliedCoupon } = useCart();
   const router = useRouter();
   const [address, setAddress] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'cod'>('card');
 
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !isSuccess) {
       router.push('/');
     }
     const savedAddress = localStorage.getItem("dripeon_shipping_address");
@@ -23,63 +28,269 @@ export default function PaymentPage() {
     }
   }, [cartItems, router]);
 
-  const handleMockPayment = async () => {
+  const handlePayment = async () => {
     setLoading(true);
-    // Simulate a payment delay
-    setTimeout(() => {
-      // In a real app, you would create the Order in MongoDB here via an API route.
-      // For now, we clear the cart and go to success.
-      clearCart();
-      localStorage.removeItem("dripeon_shipping_address");
-      router.push('/checkout/success?orderId=DRP-' + Math.floor(Math.random() * 1000000));
-    }, 2000);
+    try {
+      const orderData = {
+        products: cartItems.map(item => ({
+          product_id: item.id,
+          name: item.name,
+          size: item.size,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        shippingAddress: address,
+        totalAmount: cartTotal - discountAmount + (cartTotal > 999 ? 0 : 100),
+        coupon: appliedCoupon
+      };
+
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+
+      if (res.ok) {
+        setIsSuccess(true);
+        const data = await res.json();
+        
+        // Delay clearing the cart slightly to let the router start navigating
+        setTimeout(() => {
+          clearCart();
+          localStorage.removeItem("dripeon_shipping_address");
+        }, 100);
+        
+        router.push(`/checkout/success?orderId=${data.orderId}`);
+      } else {
+        alert("Payment failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!address) return <Loader />;
 
-  const total = cartTotal > 999 ? cartTotal : cartTotal + 100;
+  const shippingCost = cartTotal > 999 ? 0 : 100;
+  const total = cartTotal - discountAmount + shippingCost;
 
   return (
-    <div className="container" style={{ minHeight: 'calc(100vh - 120px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '500px', 
-        padding: '3rem', 
-        backgroundColor: 'var(--color-secondary)', 
-        border: '1px solid var(--color-border)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
-      }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', textAlign: 'center', lineHeight: 1, color: 'var(--color-text)' }}>
-          SECURE <br/><span style={{ color: 'var(--color-accent-gold)' }}>PAYMENT</span>
-        </h1>
-        
-        <div style={{ marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid var(--color-border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ color: '#888', fontWeight: 600 }}>Total Amount</span>
-            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text)' }}>₹{total}</span>
+    <div style={{ minHeight: 'calc(100vh - 120px)', backgroundColor: 'var(--color-bg)' }}>
+      
+      {/* Header */}
+      <div style={{ borderBottom: '1px solid var(--color-border)', padding: '1.5rem 0' }}>
+        <div className="container" style={{ display: 'flex', alignItems: 'center' }}>
+          <Link href="/checkout" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text)', textDecoration: 'none', fontWeight: 600 }}>
+            <ChevronLeft size={20} /> Back to Information
+          </Link>
+          <div style={{ flex: 1, textAlign: 'center', fontSize: '1.2rem', fontWeight: 900, letterSpacing: '1px' }}>
+            SECURE CHECKOUT
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#888', fontWeight: 600 }}>Deliver To</span>
-            <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)', textAlign: 'right' }}>
-              {address.name}<br/>
-              {address.city}, {address.state}
-            </span>
-          </div>
+          <div style={{ width: '100px' }} /> {/* Spacer */}
         </div>
-
-        <button 
-          onClick={handleMockPayment}
-          disabled={loading}
-          className="btn-primary" 
-          style={{ width: '100%', padding: '1.2rem', fontSize: '1.2rem', opacity: loading ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}
-        >
-          {loading ? 'PROCESSING...' : `PAY ₹${total}`}
-        </button>
-
-        <p style={{ marginTop: '1.5rem', textAlign: 'center', color: '#888', fontSize: '0.9rem', fontWeight: 600 }}>
-          🔒 This is a secure 256-bit SSL encrypted payment.
-        </p>
       </div>
+
+      <div className="container" style={{ padding: '3rem 1.5rem' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1.2fr 1fr', 
+          gap: '4rem', 
+          alignItems: 'start' 
+        }} className="payment-grid">
+          
+          {/* LEFT: Payment Methods */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '2rem', letterSpacing: '-0.5px' }}>
+              Payment Method
+            </h2>
+            
+            <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Lock size={16} /> All transactions are secure and encrypted.
+            </p>
+
+            <div style={{ border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
+              
+              {/* Card Option */}
+              <label style={{ display: 'flex', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', backgroundColor: paymentMethod === 'card' ? 'rgba(0,0,0,0.02)' : 'transparent', transition: 'all 0.2s' }}>
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  value="card" 
+                  checked={paymentMethod === 'card'} 
+                  onChange={() => setPaymentMethod('card')} 
+                  style={{ accentColor: 'var(--color-text)', transform: 'scale(1.2)', marginRight: '1rem' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 700, display: 'block' }}>Credit / Debit Card</span>
+                  <span style={{ fontSize: '0.8rem', color: '#888' }}>Visa, Mastercard, AMEX, RuPay</span>
+                </div>
+                <CreditCard size={24} color="#555" />
+              </label>
+
+              {/* UPI Option */}
+              <label style={{ display: 'flex', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', backgroundColor: paymentMethod === 'upi' ? 'rgba(0,0,0,0.02)' : 'transparent', transition: 'all 0.2s' }}>
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  value="upi" 
+                  checked={paymentMethod === 'upi'} 
+                  onChange={() => setPaymentMethod('upi')} 
+                  style={{ accentColor: 'var(--color-text)', transform: 'scale(1.2)', marginRight: '1rem' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 700, display: 'block' }}>UPI (GPay, PhonePe, Paytm)</span>
+                  <span style={{ fontSize: '0.8rem', color: '#888' }}>Pay instantly using your UPI app</span>
+                </div>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" style={{ height: '20px' }} />
+              </label>
+
+              {/* COD Option */}
+              <label style={{ display: 'flex', alignItems: 'center', padding: '1.5rem', cursor: 'pointer', backgroundColor: paymentMethod === 'cod' ? 'rgba(0,0,0,0.02)' : 'transparent', transition: 'all 0.2s' }}>
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  value="cod" 
+                  checked={paymentMethod === 'cod'} 
+                  onChange={() => setPaymentMethod('cod')} 
+                  style={{ accentColor: 'var(--color-text)', transform: 'scale(1.2)', marginRight: '1rem' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 700, display: 'block' }}>Cash on Delivery (COD)</span>
+                  <span style={{ fontSize: '0.8rem', color: '#888' }}>Pay when your order arrives</span>
+                </div>
+              </label>
+            </div>
+
+            {/* Simulated Payment Form (Only if card/upi selected, just visual for premium feel) */}
+            {paymentMethod === 'card' && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <input type="text" placeholder="Card Number" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <input type="text" placeholder="MM / YY" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
+                  <input type="text" placeholder="CVC" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
+                </div>
+                <input type="text" placeholder="Name on Card" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
+              </motion.div>
+            )}
+
+          </motion.div>
+
+          {/* RIGHT: Order Summary */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            transition={{ duration: 0.5, delay: 0.2 }}
+            style={{ 
+              backgroundColor: 'var(--color-secondary)', 
+              padding: '2.5rem', 
+              borderRadius: '12px',
+              border: '1px solid var(--color-border)',
+              position: 'sticky',
+              top: '2rem'
+            }}
+          >
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: '2rem' }}>Order Summary</h3>
+            
+            {/* Items */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+              {cartItems.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <Link href={`/products/${item.id}`} style={{ position: 'relative', width: '75px', height: '95px', backgroundColor: '#f0f0f0', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, display: 'block' }}>
+                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)', fontSize: '0.7rem', fontWeight: 800, width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>
+                      {item.quantity}
+                    </span>
+                  </Link>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.2rem', textTransform: 'uppercase', lineHeight: 1.2 }}>{item.name}</p>
+                    <p style={{ fontSize: '0.8rem', color: '#888', fontWeight: 600 }}>Size: {item.size}</p>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem' }}>
+                    ₹{(item.price * item.quantity).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ borderTop: '1px dashed var(--color-border)', margin: '1.5rem 0' }} />
+
+            {/* Shipping Info */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.85rem', color: '#888', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.5rem' }}>Shipping To</p>
+              <p style={{ fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.5 }}>
+                {address.name}<br/>
+                {address.street}, {address.city}, {address.state} {address.zip}
+              </p>
+            </div>
+
+            <div style={{ borderTop: '1px dashed var(--color-border)', margin: '1.5rem 0' }} />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 600, color: '#888' }}>
+                <span>Subtotal</span>
+                <span style={{ color: 'var(--color-text)' }}>₹{cartTotal.toLocaleString()}</span>
+              </div>
+              {appliedCoupon && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 700, color: '#2e7d32' }}>
+                  <span>Discount ({appliedCoupon})</span>
+                  <span>-₹{discountAmount.toLocaleString()}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 600, color: '#888' }}>
+                <span>Shipping</span>
+                <span style={{ color: 'var(--color-text)' }}>{shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text)', alignItems: 'center' }}>
+                <span>Total</span>
+                <span style={{ fontSize: '1.8rem', fontWeight: 900 }}>₹{total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <button 
+              onClick={handlePayment}
+              disabled={loading}
+              className="btn-primary" 
+              style={{ 
+                width: '100%', padding: '1.2rem', fontSize: '1rem', 
+                opacity: loading ? 0.7 : 1, display: 'flex', alignItems: 'center', 
+                justifyContent: 'center', gap: '0.8rem', borderRadius: '6px' 
+              }}
+            >
+              {loading ? 'PROCESSING...' : (
+                <>
+                  <ShieldCheck size={20} />
+                  PAY ₹{total.toLocaleString()} SECURELY
+                </>
+              )}
+            </button>
+            <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#888', marginTop: '1rem', fontWeight: 600 }}>
+              By clicking "Pay", you agree to our Terms of Service and Privacy Policy.
+            </p>
+          </motion.div>
+        </div>
+      </div>
+
+      <style>{`
+        .input-field {
+          width: 100%;
+          padding: 1.2rem;
+          background-color: var(--color-bg);
+          border: 1px solid var(--color-border);
+          border-radius: 6px;
+          color: var(--color-text);
+          font-family: inherit;
+          font-size: 1rem;
+          font-weight: 500;
+        }
+        @media (max-width: 900px) {
+          .payment-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

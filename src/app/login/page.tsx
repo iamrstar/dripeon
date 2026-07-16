@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function Login() {
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
@@ -17,6 +17,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ export default function Login() {
         setError("Invalid email or password. Please try again.");
       } else {
         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Welcome Back!" } }));
-        router.push('/');
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (err) {
@@ -85,7 +87,7 @@ export default function Login() {
         setError("Invalid or expired OTP. Please check and try again.");
       } else {
         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Welcome Back!" } }));
-        router.push('/');
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (err) {

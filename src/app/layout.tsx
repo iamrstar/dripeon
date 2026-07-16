@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
 import { Providers } from '@/components/Providers'
+import MiniCart from '@/components/MiniCart'
 
 export const metadata: Metadata = {
   title: 'Dripeon | Drip Starts Here',
@@ -19,7 +21,8 @@ export default function RootLayout({
         <Providers>
           <Navbar />
           <main>{children}</main>
-          {/* Footer will go here */}
+          <Footer />
+          <MiniCart />
         </Providers>
       </body>
     </html>
