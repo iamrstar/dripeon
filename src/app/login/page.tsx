@@ -1,11 +1,11 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function Login() {
+function LoginContent() {
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   
   const [email, setEmail] = useState('');
@@ -231,6 +231,14 @@ export default function Login() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: 'calc(100vh - 120px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
 
