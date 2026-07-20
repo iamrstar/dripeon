@@ -16,6 +16,7 @@ export default function Navbar() {
   const [expandedMobileMenu, setExpandedMobileMenu] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  const [marqueeText, setMarqueeText] = useState("FREE SHIPPING ON ALL ORDERS OVER ₹999");
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
@@ -30,6 +31,15 @@ export default function Navbar() {
         if (Array.isArray(data)) setCategories(data);
       })
       .catch(err => console.error('Failed to load categories', err));
+
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.settings.marquee_text) {
+          setMarqueeText(data.settings.marquee_text);
+        }
+      })
+      .catch(err => console.error('Failed to load settings', err));
   }, []);
 
   useEffect(() => {
@@ -51,7 +61,7 @@ export default function Navbar() {
     <>
       <div className="announcement-bar" style={{ backgroundColor: '#000000', color: '#ffffff', padding: '0.6rem 1rem', textAlign: 'center', border: 'none' }}>
         <div style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          FREE SHIPPING ON ALL ORDERS OVER ₹999
+          {marqueeText}
         </div>
       </div>
       <nav className="navbar">

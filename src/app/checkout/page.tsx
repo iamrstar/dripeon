@@ -48,9 +48,9 @@ export default function CheckoutPage() {
   const shippingCost = cartTotal > 999 ? 0 : 100;
   const finalTotal = cartTotal - discountAmount + shippingCost;
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!couponCode) return;
-    const res = applyCoupon(couponCode);
+    const res = await applyCoupon(couponCode);
     setCouponMessage({ text: res.message, type: res.success ? 'success' : 'error' });
     if (res.success) setCouponCode('');
   };

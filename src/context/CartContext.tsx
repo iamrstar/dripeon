@@ -20,7 +20,7 @@ interface CartContextType {
   cartTotal: number;
   appliedCoupon: string | null;
   discountAmount: number;
-  applyCoupon: (code: string) => { success: boolean; message: string };
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
   isCartOpen: boolean;
   openCart: () => void;
@@ -127,26 +127,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cartTotal, appliedCoupon]);
 
-  const applyCoupon = (code: string) => {
-    const upperCode = code.trim().toUpperCase();
-    
-    if (upperCode === 'WELCOME10') {
-      setAppliedCoupon('WELCOME10');
-      setDiscountAmount(Math.floor(cartTotal * 0.10));
-      return { success: true, message: '10% discount applied!' };
-    } 
-    
-    if (upperCode === 'DRIPEON500') {
-      if (cartTotal > 2000) {
-        setAppliedCoupon('DRIPEON500');
-        setDiscountAmount(500);
-        return { success: true, message: 'Flat ₹500 discount applied!' };
+  const applyCoupon = async (code: string) => {
+    try {
+      const res = await fetch('/api/validate-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, cartTotal })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setAppliedCoupon(data.code);
+        setDiscountAmount(data.discountAmount);
+        return { success: true, message: data.message };
       } else {
-        return { success: false, message: 'Cart value must be above ₹2000 for this coupon.' };
+        return { success: false, message: data.error };
       }
+    } catch (err) {
+      return { success: false, message: 'Failed to apply coupon. Try again later.' };
     }
-
-    return { success: false, message: 'Invalid or expired coupon code.' };
   };
 
   const removeCoupon = () => {
