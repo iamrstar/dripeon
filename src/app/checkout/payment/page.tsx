@@ -15,6 +15,18 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'cod'>('card');
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load Razorpay script
+    const loadRazorpayScript = () => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => setScriptLoaded(true);
+      document.body.appendChild(script);
+    };
+    loadRazorpayScript();
+  }, []);
 
   useEffect(() => {
     if (cartItems.length === 0 && !isSuccess) {
@@ -31,6 +43,9 @@ export default function PaymentPage() {
   const handlePayment = async () => {
     setLoading(true);
     try {
+      const shippingCost = cartTotal > 999 ? 0 : 100;
+      const totalAmount = cartTotal - discountAmount + shippingCost;
+      
       const orderData = {
         products: cartItems.map(item => ({
           product_id: item.id,
@@ -40,34 +55,115 @@ export default function PaymentPage() {
           price: item.price
         })),
         shippingAddress: address,
-        totalAmount: cartTotal - discountAmount + (cartTotal > 999 ? 0 : 100),
-        coupon: appliedCoupon
+        totalAmount: totalAmount,
+        coupon: appliedCoupon,
+        discountAmount: discountAmount
       };
 
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      });
+      if (paymentMethod === 'cod') {
+        // --- CASH ON DELIVERY FLOW ---
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
 
-      if (res.ok) {
-        setIsSuccess(true);
-        const data = await res.json();
-        
-        // Delay clearing the cart slightly to let the router start navigating
-        setTimeout(() => {
-          clearCart();
-          localStorage.removeItem("dripeon_shipping_address");
-        }, 100);
-        
-        router.push(`/checkout/success?orderId=${data.orderId}`);
+        if (res.ok) {
+          setIsSuccess(true);
+          const data = await res.json();
+          setTimeout(() => {
+            clearCart();
+            localStorage.removeItem("dripeon_shipping_address");
+          }, 100);
+          router.push(`/checkout/success?orderId=${data.orderId}`);
+        } else {
+          alert("Order failed. Please try again.");
+        }
       } else {
-        alert("Payment failed. Please try again.");
+        // --- RAZORPAY FLOW (Card / UPI) ---
+        if (!scriptLoaded) {
+          alert("Payment gateway is still loading. Please try again in a few seconds.");
+          setLoading(false);
+          return;
+        }
+
+        // 1. Create Order on Backend
+        const createRes = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: totalAmount })
+        });
+        
+        const createData = await createRes.json();
+        if (!createData.success) {
+          alert("Could not initialize payment. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        // 2. Open Razorpay Modal
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
+          amount: createData.amount, 
+          currency: createData.currency,
+          name: "Dripeon",
+          description: "Premium Streetwear",
+          image: "https://res.cloudinary.com/yxaowb5x/image/upload/v1/dripeon_logo.png", // fallback or omit
+          order_id: createData.order_id, 
+          handler: async function (response: any) {
+            // 3. Verify Payment Signature
+            try {
+              const verifyRes = await fetch('/api/razorpay/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  ...orderData, // Send order details to create it after verification
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature
+                })
+              });
+
+              const verifyData = await verifyRes.json();
+              if (verifyRes.ok && verifyData.success) {
+                setIsSuccess(true);
+                setTimeout(() => {
+                  clearCart();
+                  localStorage.removeItem("dripeon_shipping_address");
+                }, 100);
+                router.push(`/checkout/success?orderId=${verifyData.orderId}`);
+              } else {
+                alert("Payment verification failed. If money was deducted, it will be refunded.");
+              }
+            } catch (err) {
+              alert("Error verifying payment.");
+            }
+          },
+          prefill: {
+            name: address.name,
+            email: address.email,
+            contact: address.phone
+          },
+          theme: {
+            color: "#000000"
+          },
+          modal: {
+            ondismiss: function() {
+              setLoading(false);
+            }
+          }
+        };
+
+        const rzp1 = new (window as any).Razorpay(options);
+        rzp1.on('payment.failed', function (response: any) {
+          alert(`Payment Failed: ${response.error.description}`);
+          setLoading(false);
+        });
+        rzp1.open();
       }
     } catch (error) {
-      console.error("Payment error:", error);
+      console.error("Checkout error:", error);
       alert("An error occurred. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -163,20 +259,8 @@ export default function PaymentPage() {
                 </div>
               </label>
             </div>
-
-            {/* Simulated Payment Form (Only if card/upi selected, just visual for premium feel) */}
-            {paymentMethod === 'card' && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <input type="text" placeholder="Card Number" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <input type="text" placeholder="MM / YY" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
-                  <input type="text" placeholder="CVC" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
-                </div>
-                <input type="text" placeholder="Name on Card" className="input-field" disabled style={{ backgroundColor: 'var(--color-secondary)', opacity: 0.7 }} />
-              </motion.div>
-            )}
-
           </motion.div>
+
 
           {/* RIGHT: Order Summary */}
           <motion.div 

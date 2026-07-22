@@ -10,7 +10,7 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'details' | 'otp'>('details');
+  const [step, setStep] = useState<'details' | 'otp' | 'success'>('details');
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -69,9 +69,7 @@ export default function Signup() {
       if (loginRes?.error) {
         setError("Invalid or expired OTP. Please check and try again.");
       } else {
-        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `Welcome to Dripeon, ${name}!` } }));
-        router.push('/');
-        router.refresh();
+        setStep('success');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
@@ -142,7 +140,7 @@ export default function Signup() {
               {loading ? 'SENDING OTP...' : 'VERIFY EMAIL TO SIGNUP'}
             </button>
           </form>
-        ) : (
+        ) : step === 'otp' ? (
           <form onSubmit={handleVerifyOtpAndSignup} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
              <div>
               <label style={{ display: 'block', marginBottom: '0.8rem', fontWeight: 800, fontSize: '0.9rem', letterSpacing: '1px', textTransform: 'uppercase' }}>Enter 6-Digit OTP</label>
@@ -173,11 +171,32 @@ export default function Signup() {
               Back to details
             </button>
           </form>
+        ) : (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+              <span style={{ fontSize: '4rem' }}>🎉</span>
+            </div>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '1rem', color: 'var(--color-text)' }}>
+              WELCOME TO DRIPEON!
+            </h2>
+            <p style={{ color: '#888', fontSize: '1.1rem', fontWeight: 600, marginBottom: '2.5rem' }}>
+              Thanks for registering, {name}. Your account is now active and you're officially part of the fam.
+            </p>
+            <button 
+              onClick={() => { router.push('/'); router.refresh(); }} 
+              className="btn-primary" 
+              style={{ width: '100%', padding: '1.2rem', fontSize: '1.2rem' }}
+            >
+              START SHOPPING
+            </button>
+          </div>
         )}
 
-        <p style={{ marginTop: '2rem', textAlign: 'center', color: '#aaa', fontWeight: 500 }}>
-          Already have an account? <Link href="/login" style={{ color: 'var(--color-text)', fontWeight: 800, textDecoration: 'underline' }}>Sign in here</Link>
-        </p>
+        {step !== 'success' && (
+          <p style={{ marginTop: '2rem', textAlign: 'center', color: '#aaa', fontWeight: 500 }}>
+            Already have an account? <Link href="/login" style={{ color: 'var(--color-text)', fontWeight: 800, textDecoration: 'underline' }}>Sign in here</Link>
+          </p>
+        )}
       </div>
     </div>
   );
