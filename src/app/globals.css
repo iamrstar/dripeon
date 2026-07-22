@@ -364,6 +364,12 @@ a:hover {
 }
 
 @media (max-width: 768px) {
+  .theme-toggle-desktop {
+    display: none !important;
+  }
+  .nav-icons {
+    gap: 0.75rem !important;
+  }
   .nav-desktop-wrapper {
     display: none;
   }
@@ -372,9 +378,20 @@ a:hover {
   }
   .mobile-menu-btn {
     display: block;
+    z-index: 10;
   }
   .navbar-content {
+    display: flex;
+    justify-content: space-between;
     height: 70px;
+    position: relative;
+  }
+  .logo {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    margin: 0 !important;
+    z-index: 5;
   }
 }
 

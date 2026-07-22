@@ -131,6 +131,7 @@ export default function Navbar() {
           <div className="nav-icons">
             {mounted && (
               <button 
+                className="theme-toggle-desktop"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 aria-label="Toggle Theme" 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
@@ -295,6 +296,21 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               ))}
+
+              <div style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, fontSize: '1.1rem' }}>Theme</span>
+                {mounted && (
+                  <button 
+                    onClick={() => {
+                      setTheme(theme === 'dark' ? 'light' : 'dark');
+                      setIsOpen(false);
+                    }}
+                    style={{ background: 'var(--color-secondary)', border: '1px solid var(--color-border)', padding: '0.5rem 1rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--color-text)' }}
+                  >
+                    {theme === 'dark' ? <><Sun size={18} /> Light Mode</> : <><Moon size={18} /> Dark Mode</>}
+                  </button>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
