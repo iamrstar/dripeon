@@ -157,11 +157,10 @@ const ProductSchema: Schema = new Schema(
 );
 
 // Auto-calculate discount before saving
-ProductSchema.pre('save', function (next: any) {
+ProductSchema.pre('save', function () {
   if (this.originalPrice && this.salePrice) {
     this.discount = Math.round(((this.originalPrice as number) - (this.salePrice as number)) / (this.originalPrice as number) * 100);
   }
-  next();
 });
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

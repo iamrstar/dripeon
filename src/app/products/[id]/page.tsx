@@ -229,13 +229,13 @@ export default function ProductDetail() {
           <p style={{ fontSize: '0.82rem', color: '#888', fontWeight: 500, margin: 0, textDecoration: 'underline', cursor: 'pointer' }}>Shipping calculated at checkout.</p>
 
           {/* Stock Indicator */}
-          {product.stock !== undefined && (
+          {product.inventory && selectedSize && (
             <div style={{ marginTop: '0.5rem' }}>
-              {product.stock === 0 ? (
+              {product.inventory[selectedSize] === 0 ? (
                 <span style={{ color: '#e53935', fontWeight: 700, fontSize: '0.9rem' }}>Out of stock</span>
-              ) : product.stock < 5 ? (
+              ) : product.inventory[selectedSize] < 10 ? (
                 <span style={{ color: '#e53935', fontWeight: 700, fontSize: '0.9rem' }}>
-                  Only {product.stock} left in stock - order soon!
+                  Only {product.inventory[selectedSize]} quantity left
                 </span>
               ) : (
                 <span style={{ color: '#2e7d32', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -264,19 +264,33 @@ export default function ProductDetail() {
               </button>
             </div>
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-              {(product.sizes || ['S', 'M', 'L']).map((size: string) => (
-                <button key={size} onClick={() => setSelectedSize(size)} style={{
-                  minWidth: '44px', height: '44px', padding: '0 10px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
-                  backgroundColor: selectedSize === size ? 'var(--color-text)' : 'transparent',
-                  color: selectedSize === size ? 'var(--color-bg)' : 'var(--color-text)',
-                  border: `1.5px solid ${selectedSize === size ? 'var(--color-text)' : '#ddd'}`,
-                  transition: 'all 0.2s ease',
-                }}>
-                  {size}
-                </button>
-              ))}
+              {(product.sizes || ['S', 'M', 'L']).map((size: string) => {
+                const isOutOfStock = product.inventory && product.inventory[size] === 0;
+                return (
+                  <button 
+                    key={size} 
+                    disabled={isOutOfStock}
+                    onClick={() => {
+                      setSelectedSize(size);
+                      setQuantity(1);
+                    }} 
+                    style={{
+                      minWidth: '44px', height: '44px', padding: '0 10px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 700, fontSize: '0.85rem', cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                      backgroundColor: selectedSize === size ? 'var(--color-text)' : 'transparent',
+                      color: selectedSize === size ? 'var(--color-bg)' : isOutOfStock ? '#ccc' : 'var(--color-text)',
+                      border: `1.5px solid ${selectedSize === size ? 'var(--color-text)' : isOutOfStock ? '#eee' : '#ddd'}`,
+                      transition: 'all 0.2s ease',
+                      opacity: isOutOfStock ? 0.5 : 1,
+                      textDecoration: isOutOfStock ? 'line-through' : 'none'
+                    }}
+                    title={isOutOfStock ? "Out of stock" : ""}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -285,29 +299,52 @@ export default function ProductDetail() {
             <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #ddd', overflow: 'hidden' }}>
               <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={qtyBtnStyle}>−</button>
               <span style={{ width: '36px', textAlign: 'center', fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} style={qtyBtnStyle}>+</button>
+              <button onClick={() => {
+                const maxAvailable = product.inventory?.[selectedSize] || product.stock || 1;
+                setQuantity(Math.min(maxAvailable, quantity + 1));
+              }} style={qtyBtnStyle}>+</button>
             </div>
-            <button onClick={handleAddToCart} style={{
-              flex: 1, padding: '0 1.5rem', height: '48px',
-              backgroundColor: 'transparent', border: '1.5px solid var(--color-text)',
-              color: 'var(--color-text)', fontWeight: 800, fontSize: '0.9rem',
-              textTransform: 'uppercase', letterSpacing: '1px', cursor: 'pointer', transition: 'all 0.3s ease',
-            }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-text)'; e.currentTarget.style.color = 'var(--color-bg)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text)'; }}
+            <button onClick={handleAddToCart} 
+              disabled={product.inventory?.[selectedSize] === 0}
+              style={{
+                flex: 1, padding: '0 1.5rem', height: '48px',
+                backgroundColor: 'transparent', border: '1.5px solid var(--color-text)',
+                color: 'var(--color-text)', fontWeight: 800, fontSize: '0.9rem',
+                textTransform: 'uppercase', letterSpacing: '1px', 
+                cursor: product.inventory?.[selectedSize] === 0 ? 'not-allowed' : 'pointer', 
+                transition: 'all 0.3s ease',
+                opacity: product.inventory?.[selectedSize] === 0 ? 0.5 : 1
+              }}
+              onMouseOver={(e) => { 
+                if (product.inventory?.[selectedSize] !== 0) {
+                  e.currentTarget.style.backgroundColor = 'var(--color-text)'; 
+                  e.currentTarget.style.color = 'var(--color-bg)'; 
+                }
+              }}
+              onMouseOut={(e) => { 
+                if (product.inventory?.[selectedSize] !== 0) {
+                  e.currentTarget.style.backgroundColor = 'transparent'; 
+                  e.currentTarget.style.color = 'var(--color-text)'; 
+                }
+              }}
             >
-              ADD TO CART
+              {product.inventory?.[selectedSize] === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
             </button>
           </div>
 
           {/* Buy It Now */}
-          <button onClick={handleBuyNow} style={{
-            width: '100%', padding: '1rem', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)',
-            border: 'none', fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase',
-            letterSpacing: '1.5px', cursor: 'pointer', transition: 'opacity 0.3s ease',
-          }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = '0.85'}
-            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+          <button onClick={handleBuyNow} 
+            disabled={product.inventory?.[selectedSize] === 0}
+            style={{
+              width: '100%', padding: '1rem', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)',
+              border: 'none', fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase',
+              letterSpacing: '1.5px', 
+              cursor: product.inventory?.[selectedSize] === 0 ? 'not-allowed' : 'pointer', 
+              transition: 'opacity 0.3s ease',
+              opacity: product.inventory?.[selectedSize] === 0 ? 0.5 : 1
+            }}
+            onMouseOver={(e) => { if (product.inventory?.[selectedSize] !== 0) e.currentTarget.style.opacity = '0.85'; }}
+            onMouseOut={(e) => { if (product.inventory?.[selectedSize] !== 0) e.currentTarget.style.opacity = '1'; }}
           >
             BUY IT NOW
           </button>
