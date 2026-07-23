@@ -84,7 +84,11 @@ function LoginContent() {
       });
 
       if (res?.error) {
-        setError("Invalid or expired OTP. Please check and try again.");
+        if (res.error !== 'CredentialsSignin') {
+          setError(res.error);
+        } else {
+          setError("Invalid or expired OTP. Please check and try again.");
+        }
       } else {
         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Welcome Back!" } }));
         router.push(callbackUrl);

@@ -27,13 +27,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new CustomError("Missing email");
         }
 
+        const email = (credentials.email as string).toLowerCase().trim();
+
         await connectToDatabase();
 
-        // 1. OTP Verification Flow
         if (credentials.otp) {
+          const otpInput = (credentials.otp as string).trim();
           const validOtp = await Otp.findOne({
-            email: credentials.email,
-            otp: credentials.otp,
+            email: email,
+            otp: otpInput,
           });
 
           if (!validOtp) {
@@ -42,15 +44,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           await Otp.deleteOne({ _id: validOtp._id });
 
-          let user = await User.findOne({ email: credentials.email });
+          let user = await User.findOne({ email: email });
 
           if (!user) {
-            if (!credentials.name) {
-              throw new CustomError("No account found. Please sign up.");
-            }
+            // Auto-create account for new users logging in via OTP
+            const defaultName = email.split('@')[0];
             user = await User.create({
-              name: credentials.name,
-              email: credentials.email,
+              name: credentials.name || defaultName,
+              email: email,
             });
           }
 
@@ -64,7 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // 2. Password Verification Flow
         if (credentials.password) {
-          const user = await User.findOne({ email: credentials.email }).select("+password");
+          const user = await User.findOne({ email: email }).select("+password");
 
           if (!user) {
             throw new CustomError("No user found with this email");
