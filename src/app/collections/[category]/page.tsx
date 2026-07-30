@@ -45,6 +45,35 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
 
   return (
     <div style={{ minHeight: '80vh' }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: 'https://dripeon.com'
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Collections',
+                item: 'https://dripeon.com/collections'
+              },
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: categoryTitle,
+                item: `https://dripeon.com/collections/${category}`
+              }
+            ]
+          })
+        }}
+      />
       {/* Header */}
       <div className="container" style={{ padding: '2.5rem 1.5rem 0.5rem' }}>
         <p style={{ color: '#888', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>

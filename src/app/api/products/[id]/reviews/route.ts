@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import Product from '@/models/Product';
-import { auth } from '@/auth';
+import { currentUser } from '@clerk/nextjs/server';
 
 export async function POST(
   request: Request,
@@ -9,9 +9,9 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const session = await auth();
+    const user = await currentUser();
 
-    if (!session || !session.user) {
+    if (!user) {
       return NextResponse.json(
         { message: 'You must be logged in to leave a review' },
         { status: 401 }
@@ -40,7 +40,7 @@ export async function POST(
 
     // Check if user already reviewed
     const alreadyReviewed = product.reviews.find(
-      (r: any) => r.user.toString() === session.user?.id?.toString()
+      (r: any) => r.user.toString() === user.id.toString()
     );
 
     if (alreadyReviewed) {
@@ -51,10 +51,10 @@ export async function POST(
     }
 
     const review = {
-      name: session.user.name || 'Anonymous User',
+      name: user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Anonymous User',
       rating: Number(rating),
       comment,
-      user: session.user.id,
+      user: user.id,
     };
 
     product.reviews.push(review);

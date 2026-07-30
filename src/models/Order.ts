@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 
 const OrderSchema = new mongoose.Schema({
   user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String, // Changed to String to accommodate Clerk's "user_2aZ..." IDs
     required: false, // Optional for guest checkouts
   },
   products: [
@@ -45,6 +44,18 @@ const OrderSchema = new mongoose.Schema({
     required: false,
   },
   courierPartner: {
+    type: String,
+    required: false,
+  },
+  cancellationReason: {
+    type: String,
+    required: false,
+  },
+  returnReason: {
+    type: String,
+    required: false,
+  },
+  returnImage: {
     type: String,
     required: false,
   }

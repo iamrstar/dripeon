@@ -61,7 +61,7 @@ export default function WishlistPage() {
                 <img src={product.images[0]} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 
                 <button 
-                  onClick={(e) => { e.preventDefault(); toggleWishlist(product.slug || product._id); }}
+                  onClick={(e) => { e.preventDefault(); toggleWishlist(product._id || product.slug); }}
                   style={{
                     position: 'absolute', top: '10px', right: '10px',
                     backgroundColor: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%',
@@ -69,7 +69,7 @@ export default function WishlistPage() {
                     cursor: 'pointer', zIndex: 2
                   }}
                 >
-                  <Heart size={18} fill={isInWishlist(product.slug || product._id) ? '#e53935' : 'none'} color={isInWishlist(product.slug || product._id) ? '#e53935' : '#888'} />
+                  <Heart size={18} fill={isInWishlist(product._id || product.slug) ? '#e53935' : 'none'} color={isInWishlist(product._id || product.slug) ? '#e53935' : '#888'} />
                 </button>
               </Link>
               

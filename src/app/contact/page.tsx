@@ -2,11 +2,11 @@
 
 import { useState, useRef } from "react";
 import { Mail, MapPin, Phone, Paperclip, Loader2 } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 export default function ContactUs() {
-  const { data: session, status } = useSession();
+  const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,7 +32,7 @@ export default function ContactUs() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (status === "unauthenticated") {
+    if (!isSignedIn) {
       router.push("/login?callbackUrl=/contact");
       return;
     }

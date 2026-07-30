@@ -129,6 +129,39 @@ export default function ProductDetail() {
 
   return (
     <div style={{ minHeight: 'calc(100vh - 120px)' }}>
+      {product && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org/',
+              '@type': 'Product',
+              name: product.name,
+              image: product.images,
+              description: product.description,
+              brand: {
+                '@type': 'Brand',
+                name: 'Dripeon'
+              },
+              offers: {
+                '@type': 'Offer',
+                url: `https://dripeon.com/products/${product.slug || product._id}`,
+                priceCurrency: 'INR',
+                price: product.salePrice,
+                availability: (product.stock > 0 || (product.inventory && Object.values(product.inventory).some((v: any) => v > 0))) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                itemCondition: 'https://schema.org/NewCondition'
+              },
+              ...(product.reviews && product.reviews.length > 0 ? {
+                aggregateRating: {
+                  '@type': 'AggregateRating',
+                  ratingValue: (product.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / product.reviews.length).toFixed(1),
+                  reviewCount: product.reviews.length
+                }
+              } : {})
+            })
+          }}
+        />
+      )}
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '1fr', 

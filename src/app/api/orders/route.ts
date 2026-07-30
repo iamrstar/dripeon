@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { auth } from "@clerk/nextjs/server";
 import connectToDatabase from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
@@ -8,7 +8,7 @@ import nodemailer from "nodemailer";
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
-    const session = await auth();
+    const { userId } = await auth();
     
     const body = await req.json();
     const { products, shippingAddress, totalAmount } = body;
@@ -28,8 +28,8 @@ export async function POST(req: Request) {
       orderStatus: 'PROCESSING',
     };
 
-    if (session?.user?.id) {
-      orderData.user = session.user.id;
+    if (userId) {
+      orderData.user = userId;
     }
 
     const order = await Order.create(orderData);
@@ -125,13 +125,13 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     await connectToDatabase();
-    const session = await auth();
+    const { userId } = await auth();
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const orders = await Order.find({ user: session.user.id })
+    const orders = await Order.find({ user: userId })
       .sort({ createdAt: -1 })
       .lean();
 

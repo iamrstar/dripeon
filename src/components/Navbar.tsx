@@ -1,15 +1,16 @@
 "use client";
 
 import Link from 'next/link';
-import { ShoppingCart, Menu, X, User, Search, Sun, Moon, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Menu, X, User, Search, Sun, Moon, Plus, Minus, ShoppingBag, Heart } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
-import { useSession, signOut } from 'next-auth/react';
+import { useUser, UserButton } from '@clerk/nextjs';
 import { useCart } from '@/context/CartContext';
 import SearchOverlay from '@/components/SearchOverlay';
 
 export default function Navbar() {
+  const { isLoaded, isSignedIn, user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -19,7 +20,6 @@ export default function Navbar() {
   const [marqueeText, setMarqueeText] = useState("FREE SHIPPING ON ALL ORDERS OVER ₹999");
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { data: session } = useSession();
   const profileRef = useRef<HTMLDivElement>(null);
   const { cartItems, openCart } = useCart();
 
@@ -122,9 +122,12 @@ export default function Navbar() {
 
           {/* Logo - Center */}
           <Link href="/" className="logo" style={{ textDecoration: 'none', margin: '0 auto', display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 900, fontSize: '1.75rem', letterSpacing: '-0.05em', color: 'var(--color-text)' }}>
-              DRIPEON
-            </span>
+            <svg width="160" height="32" viewBox="0 0 160 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--color-text)' }}>
+              <path d="M16 4C16 4 8 14.5 8 19C8 23.4183 11.5817 27 16 27C20.4183 27 24 23.4183 24 19C24 14.5 16 4 16 4Z" fill="currentColor"/>
+              <text x="36" y="24" fontFamily="var(--font-sans), sans-serif" fontWeight="900" fontSize="24" letterSpacing="-1px" fill="currentColor">
+                DRIPEON
+              </text>
+            </svg>
           </Link>
 
           {/* Icons - Right */}
@@ -147,58 +150,28 @@ export default function Navbar() {
               <Search size={22} />
             </button>
             
-            <div ref={profileRef} style={{ position: 'relative' }}>
-              {session ? (
-                <>
-                  <button 
-                    onClick={() => setProfileOpen(!profileOpen)}
-                    aria-label="Account Menu"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', display: 'flex', alignItems: 'center' }}
-                  >
-                    <User size={22} />
-                  </button>
-                  <AnimatePresence>
-                    {profileOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        style={{
-                          position: 'absolute',
-                          top: '140%',
-                          right: -10,
-                          backgroundColor: 'var(--color-bg)',
-                          border: '1px solid var(--color-border)',
-                          boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                          width: '200px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          zIndex: 50
-                        }}
-                      >
-                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', fontWeight: 700, fontSize: '0.9rem' }}>
-                          Hi, {session.user?.name?.split(' ')[0] || 'User'}
-                        </div>
-                        <Link href="/profile/orders" onClick={() => setProfileOpen(false)} style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', textDecoration: 'none', color: 'inherit', fontWeight: 500, fontSize: '0.9rem' }}>
-                          My Orders
-                        </Link>
-                        <Link href="/profile/wishlist" onClick={() => setProfileOpen(false)} style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', textDecoration: 'none', color: 'inherit', fontWeight: 500, fontSize: '0.9rem' }}>
-                          Wishlist
-                        </Link>
-                        <button 
-                          onClick={() => { signOut(); setProfileOpen(false); }}
-                          style={{ padding: '1rem', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: '#ff3333', fontWeight: 700, fontSize: '0.9rem' }}
-                        >
-                          Logout
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              ) : (
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              {isLoaded && isSignedIn ? (
+                <UserButton>
+                  <UserButton.MenuItems>
+                    <UserButton.Link
+                      label="My Orders"
+                      labelIcon={<ShoppingBag size={14} />}
+                      href="/profile/orders"
+                    />
+                    <UserButton.Link
+                      label="Wishlist"
+                      labelIcon={<Heart size={14} />}
+                      href="/profile/wishlist"
+                    />
+                  </UserButton.MenuItems>
+                </UserButton>
+              ) : isLoaded && !isSignedIn ? (
                 <Link href="/login" aria-label="Account">
                   <User size={22} />
                 </Link>
+              ) : (
+                <div style={{ width: 22, height: 22 }} />
               )}
             </div>
 

@@ -91,7 +91,10 @@ export default function PaymentPage() {
         const createRes = await fetch('/api/razorpay/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: totalAmount })
+          body: JSON.stringify({ 
+            products: orderData.products,
+            coupon: appliedCoupon
+          })
         });
         
         const createData = await createRes.json();
