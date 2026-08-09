@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: `Product not found: ${item.name}` }, { status: 404 });
       }
       
-      const price = dbProduct.salePrice || dbProduct.price;
+      const price = dbProduct.salePrice || dbProduct.originalPrice;
       calculatedTotal += price * item.quantity;
       
       secureProducts.push({
