@@ -57,7 +57,7 @@ export async function POST(
       user: user.id,
     };
 
-    product.reviews.push(review);
+    product.reviews.push(review as any);
     product.numReviews = product.reviews.length;
     product.averageRating =
       product.reviews.reduce((acc: number, item: any) => item.rating + acc, 0) /
