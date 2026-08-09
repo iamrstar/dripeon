@@ -86,8 +86,27 @@ export async function POST(req: Request) {
     const shippingCost = calculatedTotal > 999 ? 0 : 100;
     calculatedTotal += shippingCost;
 
+    // Generate Sequential Order Number (DDMMYYxx)
+    const today = new Date();
+    const dd = String(today.getUTCDate()).padStart(2, '0');
+    const mm = String(today.getUTCMonth() + 1).padStart(2, '0');
+    const yy = String(today.getUTCFullYear()).slice(-2);
+    const dateStr = `${dd}${mm}${yy}`;
+
+    const startOfDay = new Date(today);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const count = await Order.countDocuments({ 
+      createdAt: { $gte: startOfDay, $lte: endOfDay } 
+    });
+
+    const orderNumber = `${dateStr}${String(count + 1).padStart(2, '0')}`;
+
     // 4. CREATE SECURE ORDER
     const orderData: any = {
+      orderNumber,
       user: userId || null,
       products: secureProducts,
       shippingAddress,
@@ -119,9 +138,9 @@ export async function POST(req: Request) {
         await resend.emails.send({
           from: "Dripeon Orders <orders@dripeon.com>",
           to: shippingAddress.email,
-          subject: `Order Confirmed: DRP-${order._id.toString().substring(0, 8).toUpperCase()}`,
+          subject: `Order Confirmed: #${order.orderNumber}`,
           react: OrderReceipt({
-            orderId: order._id.toString(),
+            orderId: order.orderNumber,
             shippingAddress,
             products: secureProducts,
             totalAmount: calculatedTotal

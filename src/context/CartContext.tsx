@@ -9,6 +9,7 @@ export type CartItem = {
   image: string;
   size: string;
   quantity: number;
+  maxStock?: number;
 };
 
 interface CartContextType {
@@ -80,9 +81,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         (i) => i.id === item.id && i.size === item.size
       );
       if (existing) {
+        const newQuantity = existing.quantity + item.quantity;
         return prev.map((i) =>
           i.id === item.id && i.size === item.size
-            ? { ...i, quantity: i.quantity + item.quantity }
+            ? { ...i, quantity: item.maxStock !== undefined ? Math.min(newQuantity, item.maxStock) : newQuantity }
             : i
         );
       }
@@ -97,9 +99,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = (id: string, size: string, quantity: number) => {
     if (quantity < 1) return;
     setCartItems((prev) =>
-      prev.map((i) =>
-        i.id === id && i.size === size ? { ...i, quantity } : i
-      )
+      prev.map((i) => {
+        if (i.id === id && i.size === size) {
+          const maxQ = i.maxStock !== undefined ? i.maxStock : Infinity;
+          return { ...i, quantity: Math.min(quantity, maxQ) };
+        }
+        return i;
+      })
     );
   };
 

@@ -7,14 +7,21 @@ import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import Loader from '@/components/Loader';
 
-export default function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
-  const { category } = use(params);
+import { useParams } from 'next/navigation';
+
+export default function CategoryPage() {
+  const params = useParams();
+  const category = params.category as string | string[];
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [quickView, setQuickView] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const categoryArray = Array.isArray(category) ? category : [category];
+  const mainCategory = categoryArray[0];
+  const subCategory = categoryArray.length > 1 ? categoryArray[1] : null;
   
-  const categoryTitle = category.replace(/-/g, ' ').toUpperCase();
+  const categoryTitle = categoryArray.join(' / ').replace(/-/g, ' ').toUpperCase();
 
   // Map URL slugs to DB categories
   const categoryMap: Record<string, string> = {
@@ -26,8 +33,42 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const dbCategory = categoryMap[category.toLowerCase()] || category.toLowerCase();
-        const res = await fetch(`/api/products?category=${dbCategory}`);
+        // First, resolve the slug to the exact category name from the database
+        const catsRes = await fetch('/api/categories');
+        let searchCategoryName = mainCategory;
+        if (catsRes.ok) {
+          const catsData = await catsRes.json();
+          const foundCat = catsData.find((c: any) => c.slug.toLowerCase() === mainCategory.toLowerCase());
+          if (foundCat) {
+            searchCategoryName = foundCat.name;
+          }
+        }
+
+        const dbCategory = categoryMap[searchCategoryName.toLowerCase()] || searchCategoryName;
+        
+        let apiUrl = '/api/products';
+        const lowerCat = mainCategory.toLowerCase();
+        
+        if (lowerCat === 'mens' || lowerCat === 'men') {
+          apiUrl += '?gender=Men';
+        } else if (lowerCat === 'womens' || lowerCat === 'women') {
+          apiUrl += '?gender=Women';
+        } else if (lowerCat === 'kids') {
+          apiUrl += '?gender=Kids';
+        } else if (lowerCat === 'unisex') {
+          apiUrl += '?gender=Unisex';
+        } else if (lowerCat !== 'all') {
+          apiUrl += `?category=${encodeURIComponent(dbCategory)}`;
+        }
+        
+        if (subCategory) {
+          // Replace hyphens with spaces for DB matching (e.g., 'cargo-pants' -> 'cargo pants' or match regex if needed)
+          // We will encode it so backend receives it correctly.
+          apiUrl += (apiUrl.includes('?') ? '&' : '?') + `subcategory=${encodeURIComponent(subCategory.replace(/-/g, ' '))}`;
+        }
+        
+        const res = await fetch(apiUrl);
+        
         if (res.ok) {
           const data = await res.json();
           setProducts(data);
@@ -198,15 +239,17 @@ function ProductCard({ product, isWishlisted, onToggleWishlist, onQuickView }: {
           transition: 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)', zIndex: 3,
         }}>
           <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickView(); }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (product.stock > 0) onQuickView(); }}
+            disabled={product.stock === 0}
             style={{
               width: '100%', padding: '1rem',
-              backgroundColor: 'rgba(0,0,0,0.85)', color: '#fff', border: 'none', backdropFilter: 'blur(4px)',
+              backgroundColor: product.stock > 0 ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.5)', 
+              color: '#fff', border: 'none', backdropFilter: 'blur(4px)',
               fontWeight: 800, fontSize: '0.8rem', letterSpacing: '2px', textTransform: 'uppercase',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              cursor: product.stock > 0 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
             }}
           >
-            <ShoppingBag size={16} /> QUICK ADD
+            <ShoppingBag size={16} /> {product.stock > 0 ? 'QUICK ADD' : 'OUT OF STOCK'}
           </button>
         </div>
       </Link>
@@ -251,6 +294,8 @@ function QuickViewDrawer({ product, onClose, isWishlisted, onToggleWishlist }: {
   const [quantity, setQuantity] = useState(1);
   const [currentImage, setCurrentImage] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
+  const [isEnquiring, setIsEnquiring] = useState(false);
+  const [hasEnquired, setHasEnquired] = useState(false);
   const { addToCart } = useCart();
 
   const images = product.images || ['/IMG_3031.jpeg'];
@@ -266,6 +311,9 @@ function QuickViewDrawer({ product, onClose, isWishlisted, onToggleWishlist }: {
   };
 
   const handleAddToCart = () => {
+    const maxStock = product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : product.stock;
+    if (maxStock === 0) return;
+    
     addToCart({
       id: product._id || product.slug,
       name: product.name,
@@ -273,10 +321,28 @@ function QuickViewDrawer({ product, onClose, isWishlisted, onToggleWishlist }: {
       image: product.images?.[0] || '/IMG_3031.jpeg',
       size: selectedSize,
       quantity,
+      maxStock,
     });
     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Added to cart!" } }));
     handleClose();
   };
+
+  const handleNotifyMe = async () => {
+    if (isEnquiring || hasEnquired) return;
+    setIsEnquiring(true);
+    try {
+      const res = await fetch(`/api/products/${product._id || product.slug}/enquire`, { method: 'POST' });
+      if (res.ok) {
+        setHasEnquired(true);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "We'll notify you when it's back in stock!" } }));
+      }
+    } catch (e) {
+      console.error("Failed to enquire", e);
+    }
+    setIsEnquiring(false);
+  };
+
+  const isSelectedOutOfStock = (product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : (product.stock || 0)) === 0;
 
   return (
     <>
@@ -415,32 +481,70 @@ function QuickViewDrawer({ product, onClose, isWishlisted, onToggleWishlist }: {
             <div style={{ height: '1px', backgroundColor: 'var(--color-border)' }} />
 
             {/* Quantity + Add to Cart */}
-            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'stretch' }}>
-              <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid var(--color-border)', borderRadius: '2px' }}>
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={qtyBtnStyle}>−</button>
-                <span style={{ width: '32px', textAlign: 'center', fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} style={qtyBtnStyle}>+</button>
-              </div>
-              <button onClick={handleAddToCart} style={{
-                flex: 1, padding: '0 1.5rem', height: '46px',
-                backgroundColor: 'transparent', border: '1.5px solid var(--color-text)',
-                color: 'var(--color-text)', fontWeight: 800, fontSize: '0.82rem',
-                textTransform: 'uppercase', letterSpacing: '1.5px', cursor: 'pointer', 
-                transition: 'all 0.3s ease', borderRadius: '2px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              }}
-                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-text)'; e.currentTarget.style.color = 'var(--color-bg)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text)'; }}
+            {isSelectedOutOfStock ? (
+              <button 
+                onClick={handleNotifyMe}
+                disabled={isEnquiring || hasEnquired}
+                style={{
+                  width: '100%', padding: '1.2rem',
+                  backgroundColor: hasEnquired ? '#2e7d32' : 'var(--color-text)', 
+                  color: 'var(--color-bg)', border: 'none',
+                  fontWeight: 800, fontSize: '0.9rem',
+                  textTransform: 'uppercase', letterSpacing: '1px', 
+                  cursor: (isEnquiring || hasEnquired) ? 'not-allowed' : 'pointer', 
+                  transition: 'all 0.3s ease', borderRadius: '2px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                }}
               >
-                <ShoppingBag size={15} /> ADD TO CART
+                {hasEnquired ? 'WE WILL NOTIFY YOU!' : isEnquiring ? 'REGISTERING...' : 'NOTIFY ME WHEN AVAILABLE'}
               </button>
-            </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid var(--color-border)', borderRadius: '2px', opacity: isSelectedOutOfStock ? 0.5 : 1 }}>
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={qtyBtnStyle} disabled={isSelectedOutOfStock}>−</button>
+                  <span style={{ width: '32px', textAlign: 'center', fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>{quantity}</span>
+                  <button onClick={() => setQuantity(Math.min(quantity + 1, product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : (product.stock || 1)))} style={qtyBtnStyle} disabled={isSelectedOutOfStock || quantity >= (product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : (product.stock || 1))}>+</button>
+                </div>
+                <button 
+                  onClick={handleAddToCart} 
+                  disabled={isSelectedOutOfStock}
+                  style={{
+                    flex: 1, padding: '0 1.5rem', height: '46px',
+                    backgroundColor: isSelectedOutOfStock ? '#eee' : 'transparent', 
+                    border: `1.5px solid ${isSelectedOutOfStock ? '#ddd' : 'var(--color-text)'}`,
+                    color: isSelectedOutOfStock ? '#999' : 'var(--color-text)', 
+                    fontWeight: 800, fontSize: '0.82rem',
+                    textTransform: 'uppercase', letterSpacing: '1.5px', 
+                    cursor: isSelectedOutOfStock ? 'not-allowed' : 'pointer', 
+                    transition: 'all 0.3s ease', borderRadius: '2px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  }}
+                  onMouseOver={(e) => { 
+                    if (!isSelectedOutOfStock) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-text)'; 
+                      e.currentTarget.style.color = 'var(--color-bg)'; 
+                    }
+                  }}
+                  onMouseOut={(e) => { 
+                    if (!isSelectedOutOfStock) {
+                      e.currentTarget.style.backgroundColor = 'transparent'; 
+                      e.currentTarget.style.color = 'var(--color-text)'; 
+                    }
+                  }}
+                >
+                  <ShoppingBag size={15} /> {isSelectedOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
+                </button>
+              </div>
+            )}
 
             {/* Buy It Now */}
-            <button style={{
+            <button 
+              disabled={isSelectedOutOfStock}
+              style={{
               width: '100%', padding: '0.9rem', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)',
               border: 'none', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase',
-              letterSpacing: '1.5px', cursor: 'pointer', transition: 'opacity 0.3s ease', borderRadius: '2px',
+              letterSpacing: '1.5px', cursor: isSelectedOutOfStock ? 'not-allowed' : 'pointer', marginTop: '0.6rem',
+              opacity: isSelectedOutOfStock ? 0.5 : 1, transition: 'opacity 0.3s ease', borderRadius: '2px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
             }}
               onMouseOver={(e) => e.currentTarget.style.opacity = '0.85'}

@@ -202,6 +202,12 @@ a:hover {
   height: 80px;
 }
 
+.logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .logo img {
   height: 40px;
   width: auto;
@@ -216,7 +222,7 @@ a:hover {
 
 .nav-links {
   display: flex;
-  gap: 2.5rem;
+  gap: 1.5rem;
   align-items: center;
   height: 100%;
 }
@@ -229,12 +235,13 @@ a:hover {
 
 .nav-link-main, .nav-links a {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   position: relative;
   padding: 0.5rem 0;
   color: var(--color-text);
+  white-space: nowrap;
 }
 
 .nav-link-main::after, .nav-links a::after {

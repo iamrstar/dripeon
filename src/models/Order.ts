@@ -5,6 +5,11 @@ const OrderSchema = new mongoose.Schema({
     type: String, // Changed to String to accommodate Clerk's "user_2aZ..." IDs
     required: false, // Optional for guest checkouts
   },
+  orderNumber: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   products: [
     {
       product_id: { type: String, required: true },
@@ -36,7 +41,7 @@ const OrderSchema = new mongoose.Schema({
   },
   orderStatus: {
     type: String,
-    enum: ['PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'RETURN_REQUESTED', 'RETURNED', 'CANCELLED'],
+    enum: ['PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'RETURN_REQUESTED', 'RETURN_ACCEPTED', 'PICKUP_SUCCESSFUL', 'REFUND_INITIATED', 'REPLACEMENT_PROCESSED', 'RETURNED', 'CANCELLED'],
     default: 'PROCESSING',
   },
   trackingNumber: {
@@ -61,4 +66,7 @@ const OrderSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-export default mongoose.models.Order || mongoose.model('Order', OrderSchema);
+if (mongoose.models.Order) {
+  delete mongoose.models.Order;
+}
+export default mongoose.model('Order', OrderSchema);

@@ -101,7 +101,12 @@ export default function MiniCart() {
                             </span>
                             <button 
                               onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
-                              style={{ background: 'none', border: 'none', padding: '0.2rem 0.5rem', cursor: 'pointer' }}
+                              disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
+                              style={{ 
+                                background: 'none', border: 'none', padding: '0.2rem 0.5rem', 
+                                cursor: (item.maxStock !== undefined && item.quantity >= item.maxStock) ? 'not-allowed' : 'pointer',
+                                opacity: (item.maxStock !== undefined && item.quantity >= item.maxStock) ? 0.3 : 1
+                              }}
                             >
                               <Plus size={14} />
                             </button>

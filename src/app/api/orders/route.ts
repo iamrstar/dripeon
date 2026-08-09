@@ -17,8 +17,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "No products in order" }, { status: 400 });
     }
 
+    // Generate Sequential Order Number (DDMMYYxx)
+    const today = new Date();
+    const dd = String(today.getUTCDate()).padStart(2, '0');
+    const mm = String(today.getUTCMonth() + 1).padStart(2, '0');
+    const yy = String(today.getUTCFullYear()).slice(-2);
+    const dateStr = `${dd}${mm}${yy}`;
+
+    const startOfDay = new Date(today);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const count = await Order.countDocuments({ 
+      createdAt: { $gte: startOfDay, $lte: endOfDay } 
+    });
+
+    const orderNumber = `${dateStr}${String(count + 1).padStart(2, '0')}`;
+
     // Create the order
     const orderData: any = {
+      orderNumber,
       products,
       shippingAddress,
       totalAmount,
@@ -36,7 +55,14 @@ export async function POST(req: Request) {
 
     // Decrease stock for each product
     for (const item of products) {
-      await Product.findByIdAndUpdate(item.product_id, {
+      const isObjectId = item.product_id && item.product_id.match(/^[0-9a-fA-F]{24}$/);
+      const query = isObjectId ? { _id: item.product_id } : { 
+        $or: [
+          { slug: item.product_id },
+          { name: item.name } 
+        ] 
+      };
+      await Product.findOneAndUpdate(query, {
         $inc: { stock: -item.quantity }
       });
     }
@@ -65,7 +91,7 @@ export async function POST(req: Request) {
       await transporter.sendMail({
         from: `"Dripeon Team" <${process.env.EMAIL_USER}>`,
         to: shippingAddress.email,
-        subject: `Order Confirmed: DRP-${order._id.toString().substring(0, 8)}`,
+        subject: `Order Confirmed: #${order.orderNumber}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
             <h2 style="color: #333; margin-bottom: 20px;">Order Confirmation</h2>
@@ -74,6 +100,9 @@ export async function POST(req: Request) {
               Thank you for your purchase! We're getting your order ready to be shipped. 
               <strong>Tracking details will be shared soon when the item has been shipped.</strong>
             </p>
+            <div style="background-color: #f5f5f5; padding: 10px 15px; border-radius: 5px; display: inline-block; margin-top: 10px; margin-bottom: 20px;">
+              <span style="font-size: 14px; font-weight: bold; color: #555;">Order ID: #${order.orderNumber}</span>
+            </div>
             
             <div style="margin: 30px 0;">
               <h3 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px;">Order Summary</h3>

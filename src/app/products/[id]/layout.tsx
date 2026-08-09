@@ -2,8 +2,8 @@ import { Metadata } from 'next';
 import connectToDatabase from '@/lib/mongodb';
 import Product from '@/models/Product';
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const { id } = params;
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
   let title = 'Product | Dripeon';
   let description = 'Check out this product on Dripeon.';
   let imageUrl = '/hero_mens_streetwear.png';

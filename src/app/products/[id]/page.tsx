@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { useSession } from "next-auth/react";
+import { useUser } from "@clerk/nextjs";
 import { Heart, ChevronLeft, ChevronRight, Ruler, MapPin, Package, CreditCard, Truck, Star } from "lucide-react";
 import Loader from "@/components/Loader";
 
@@ -14,7 +14,7 @@ export default function ProductDetail() {
   const router = useRouter();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const { data: session } = useSession();
+  const { isSignedIn } = useUser();
   
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,10 @@ export default function ProductDetail() {
   const [currentImage, setCurrentImage] = useState(0);
   const [pincode, setPincode] = useState("");
   const [pincodeResult, setPincodeResult] = useState<string | null>(null);
+  
+  // Enquiry state
+  const [isEnquiring, setIsEnquiring] = useState(false);
+  const [hasEnquired, setHasEnquired] = useState(false);
   
   // New features state
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
@@ -100,13 +104,17 @@ export default function ProductDetail() {
   if (!product) return <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><h2>Product not found</h2></div>;
 
   const handleAddToCart = () => {
+    const maxStock = product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : product.stock;
+    if (maxStock === 0) return;
+    
     addToCart({
       id: product._id || product.slug,
       name: product.name,
       price: product.salePrice,
       image: product.images[0],
       size: selectedSize || 'M',
-      quantity: quantity
+      quantity: quantity,
+      maxStock: maxStock
     });
     window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Added to cart!" } }));
   };
@@ -114,6 +122,21 @@ export default function ProductDetail() {
   const handleBuyNow = () => {
     handleAddToCart();
     router.push('/checkout');
+  };
+
+  const handleNotifyMe = async () => {
+    if (isEnquiring || hasEnquired) return;
+    setIsEnquiring(true);
+    try {
+      const res = await fetch(`/api/products/${product._id}/enquire`, { method: 'POST' });
+      if (res.ok) {
+        setHasEnquired(true);
+        window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "We'll notify you when it's back in stock!" } }));
+      }
+    } catch (e) {
+      console.error("Failed to enquire", e);
+    }
+    setIsEnquiring(false);
   };
 
   const nextImage = () => setCurrentImage((prev) => (prev + 1) % product.images.length);
@@ -126,6 +149,8 @@ export default function ProductDetail() {
       setPincodeResult("Please enter a valid 6-digit pincode.");
     }
   };
+
+  const isSelectedOutOfStock = product ? (product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : (product.stock || 0)) === 0 : false;
 
   return (
     <div style={{ minHeight: 'calc(100vh - 120px)' }}>
@@ -298,7 +323,7 @@ export default function ProductDetail() {
             </div>
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
               {(product.sizes || ['S', 'M', 'L']).map((size: string) => {
-                const isOutOfStock = product.inventory && product.inventory[size] === 0;
+                const isOutOfStock = (product.inventory?.[size] !== undefined ? product.inventory[size] : (product.stock || 0)) === 0;
                 return (
                   <button 
                     key={size} 
@@ -328,59 +353,76 @@ export default function ProductDetail() {
           </div>
 
           {/* Quantity + Add to Cart */}
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'stretch' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #ddd', overflow: 'hidden' }}>
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={qtyBtnStyle}>−</button>
-              <span style={{ width: '36px', textAlign: 'center', fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>{quantity}</span>
-              <button onClick={() => {
-                const maxAvailable = product.inventory?.[selectedSize] || product.stock || 1;
-                setQuantity(Math.min(maxAvailable, quantity + 1));
-              }} style={qtyBtnStyle}>+</button>
-            </div>
-            <button onClick={handleAddToCart} 
-              disabled={product.inventory?.[selectedSize] === 0}
+          {isSelectedOutOfStock ? (
+            <button 
+              onClick={handleNotifyMe}
+              disabled={isEnquiring || hasEnquired}
               style={{
-                flex: 1, padding: '0 1.5rem', height: '48px',
-                backgroundColor: 'transparent', border: '1.5px solid var(--color-text)',
-                color: 'var(--color-text)', fontWeight: 800, fontSize: '0.9rem',
+                width: '100%', padding: '1.2rem',
+                backgroundColor: hasEnquired ? '#2e7d32' : 'var(--color-text)', 
+                color: 'var(--color-bg)', border: 'none',
+                fontWeight: 800, fontSize: '0.9rem',
                 textTransform: 'uppercase', letterSpacing: '1px', 
-                cursor: product.inventory?.[selectedSize] === 0 ? 'not-allowed' : 'pointer', 
+                cursor: (isEnquiring || hasEnquired) ? 'not-allowed' : 'pointer', 
                 transition: 'all 0.3s ease',
-                opacity: product.inventory?.[selectedSize] === 0 ? 0.5 : 1
-              }}
-              onMouseOver={(e) => { 
-                if (product.inventory?.[selectedSize] !== 0) {
-                  e.currentTarget.style.backgroundColor = 'var(--color-text)'; 
-                  e.currentTarget.style.color = 'var(--color-bg)'; 
-                }
-              }}
-              onMouseOut={(e) => { 
-                if (product.inventory?.[selectedSize] !== 0) {
-                  e.currentTarget.style.backgroundColor = 'transparent'; 
-                  e.currentTarget.style.color = 'var(--color-text)'; 
-                }
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
               }}
             >
-              {product.inventory?.[selectedSize] === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
+              {hasEnquired ? 'WE WILL NOTIFY YOU!' : isEnquiring ? 'REGISTERING...' : 'NOTIFY ME WHEN AVAILABLE'}
             </button>
-          </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #ddd', overflow: 'hidden', opacity: isSelectedOutOfStock ? 0.5 : 1 }}>
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={qtyBtnStyle} disabled={isSelectedOutOfStock}>−</button>
+                  <span style={{ width: '36px', textAlign: 'center', fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text)' }}>{quantity}</span>
+                  <button onClick={() => {
+                    const maxAvailable = product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : (product.stock || 1);
+                    setQuantity(Math.min(maxAvailable, quantity + 1));
+                  }} style={qtyBtnStyle} disabled={isSelectedOutOfStock || quantity >= (product.inventory?.[selectedSize] !== undefined ? product.inventory[selectedSize] : (product.stock || 1))}>+</button>
+                </div>
+                <button onClick={handleAddToCart} 
+                  disabled={isSelectedOutOfStock}
+                  style={{
+                    flex: 1, padding: '0 1.5rem', height: '48px',
+                    backgroundColor: 'transparent', border: '1.5px solid var(--color-text)',
+                    color: 'var(--color-text)', fontWeight: 800, fontSize: '0.9rem',
+                    textTransform: 'uppercase', letterSpacing: '1px', 
+                    cursor: isSelectedOutOfStock ? 'not-allowed' : 'pointer', 
+                    transition: 'all 0.3s ease',
+                    opacity: isSelectedOutOfStock ? 0.5 : 1
+                  }}
+                  onMouseOver={(e) => { 
+                    if (!isSelectedOutOfStock) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-text)'; 
+                      e.currentTarget.style.color = 'var(--color-bg)'; 
+                    }
+                  }}
+                  onMouseOut={(e) => { 
+                    if (!isSelectedOutOfStock) {
+                      e.currentTarget.style.backgroundColor = 'transparent'; 
+                      e.currentTarget.style.color = 'var(--color-text)'; 
+                    }
+                  }}
+                >
+                  {isSelectedOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
+                </button>
+              </div>
 
-          {/* Buy It Now */}
-          <button onClick={handleBuyNow} 
-            disabled={product.inventory?.[selectedSize] === 0}
-            style={{
-              width: '100%', padding: '1rem', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)',
-              border: 'none', fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase',
-              letterSpacing: '1.5px', 
-              cursor: product.inventory?.[selectedSize] === 0 ? 'not-allowed' : 'pointer', 
-              transition: 'opacity 0.3s ease',
-              opacity: product.inventory?.[selectedSize] === 0 ? 0.5 : 1
-            }}
-            onMouseOver={(e) => { if (product.inventory?.[selectedSize] !== 0) e.currentTarget.style.opacity = '0.85'; }}
-            onMouseOut={(e) => { if (product.inventory?.[selectedSize] !== 0) e.currentTarget.style.opacity = '1'; }}
-          >
-            BUY IT NOW
-          </button>
+              {/* Buy It Now */}
+              <button onClick={handleBuyNow} 
+                disabled={isSelectedOutOfStock}
+                style={{
+                  width: '100%', padding: '1rem', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)',
+                  border: 'none', fontWeight: 800, fontSize: '0.9rem', textTransform: 'uppercase',
+                  letterSpacing: '1px', cursor: isSelectedOutOfStock ? 'not-allowed' : 'pointer', marginTop: '0.6rem',
+                  opacity: isSelectedOutOfStock ? 0.5 : 1
+                }}
+              >
+                BUY IT NOW
+              </button>
+            </>
+          )}
 
           {/* Check Delivery Section */}
           <div style={{ border: '1px solid var(--color-border)', padding: '1.2rem', marginTop: '0.5rem' }}>
@@ -476,7 +518,7 @@ export default function ProductDetail() {
           <div style={{ backgroundColor: 'var(--color-secondary)', padding: '2rem', borderRadius: '8px', border: '1px solid var(--color-border)', height: 'fit-content' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1.5rem' }}>Write a Review</h3>
             
-            {!session ? (
+            {!isSignedIn ? (
               <div style={{ padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '6px', textAlign: 'center' }}>
                 <p style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#666' }}>You must be logged in to leave a review.</p>
                 <Link href={`/login?callbackUrl=/products/${product._id}`} style={{ display: 'inline-block', padding: '0.6rem 1.2rem', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)', textDecoration: 'none', borderRadius: '4px', fontWeight: 700, fontSize: '0.85rem' }}>

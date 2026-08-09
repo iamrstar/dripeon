@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Providers } from '@/components/Providers'
 import MiniCart from '@/components/MiniCart'
+import Chatbot from '@/components/Chatbot'
 
 import { ClerkProvider } from '@clerk/nextjs'
 
@@ -108,6 +109,7 @@ export default function RootLayout({
             <main>{children}</main>
             <Footer />
             <MiniCart />
+            <Chatbot />
           </Providers>
         </body>
       </html>

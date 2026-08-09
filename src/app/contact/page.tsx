@@ -160,11 +160,11 @@ export default function ContactUs() {
               <div style={{ display: 'flex', gap: '1.5rem' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--color-text)' }}>Name</label>
-                  <input type="text" required placeholder="John Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={inputStyle} />
+                  <input type="text" required placeholder="Rohan Kapoor" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={inputStyle} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--color-text)' }}>Email</label>
-                  <input type="email" required placeholder="john@example.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={inputStyle} />
+                  <input type="email" required placeholder="rohan@gmail.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={inputStyle} />
                 </div>
               </div>
 

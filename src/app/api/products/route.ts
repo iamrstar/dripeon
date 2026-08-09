@@ -9,6 +9,8 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
+    const subcategory = searchParams.get("subcategory");
+    const gender = searchParams.get("gender");
     const featured = searchParams.get("featured");
     const ids = searchParams.get("ids");
     const search = searchParams.get("search");
@@ -16,6 +18,8 @@ export async function GET(req: Request) {
 
     const filter: any = { isActive: true };
     if (category) filter.category = new RegExp(`^${category}$`, "i");
+    if (subcategory) filter.subcategory = new RegExp(`^${subcategory}$`, "i");
+    if (gender) filter.gender = new RegExp(`^${gender}$`, "i");
     if (featured === "true") filter.featured = true;
     if (search) {
       filter.$or = [

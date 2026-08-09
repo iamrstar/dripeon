@@ -57,6 +57,9 @@ export default function Navbar() {
     };
   }, [profileOpen]);
 
+  const leftCategories = categories.slice(0, Math.ceil(categories.length / 2));
+  const rightCategories = categories.slice(Math.ceil(categories.length / 2));
+
   return (
     <>
       <div className="announcement-bar" style={{ backgroundColor: '#000000', color: '#ffffff', padding: '0.6rem 1rem', textAlign: 'center', border: 'none' }}>
@@ -64,141 +67,168 @@ export default function Navbar() {
           {marqueeText}
         </div>
       </div>
-      <nav className="navbar">
+      <nav className="navbar" onMouseLeave={() => setActiveMenu(null)}>
         <div className="container navbar-content">
           
-          {/* Mobile Menu Button */}
-          <button className="mobile-menu-btn" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={26} /> : <Menu size={26} />}
-          </button>
+          {/* Left Column */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <button className="mobile-menu-btn" onClick={() => setIsOpen(!isOpen)}>
+              {isOpen ? <X size={26} /> : <Menu size={26} />}
+            </button>
 
-          {/* Desktop Nav - Left */}
-          <div className="nav-desktop-wrapper" onMouseLeave={() => setActiveMenu(null)}>
-            <div className="nav-links">
-              {categories.map((cat) => (
-                <div key={cat._id} className="nav-item-wrapper" onMouseEnter={() => setActiveMenu(cat.slug)}>
-                  <Link href={`/collections/${cat.slug}`} className="nav-link-main">{cat.name}</Link>
-                </div>
-              ))}
-            </div>
-
-            {/* Megamenu Overlay */}
-            <AnimatePresence>
-              {activeMenu && categories.find(c => c.slug === activeMenu) && (
-                <motion.div 
-                  className="megamenu-panel"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  onMouseEnter={() => setActiveMenu(activeMenu)}
-                >
-                  <div className="container megamenu-container">
-                    <div className="megamenu-columns">
-                      {categories.find(c => c.slug === activeMenu).columns.map((col: any, i: number) => (
-                        <div key={i} className="megamenu-col">
-                          <h4>{col.title}</h4>
-                          {col.links.map((link: any, j: number) => (
-                            <Link key={j} href={link.url}>{link.label}</Link>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="megamenu-images">
-                      {categories.find(c => c.slug === activeMenu).imageCards.map((img: any, i: number) => (
-                        <Link key={i} href={img.url} className="megamenu-image-card">
-                          <img src={img.imageUrl} alt={img.title} />
-                          <div className="megamenu-image-text">
-                            <span>{img.title}</span>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
+            <div className="nav-desktop-wrapper hidden md:flex">
+              <div className="nav-links">
+                {leftCategories.map((cat) => (
+                  <div key={cat._id} className="nav-item-wrapper" onMouseEnter={() => setActiveMenu(cat.slug)}>
+                    <Link href={`/collections/${cat.slug}`} className="nav-link-main">{cat.name}</Link>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Logo - Center */}
-          <Link href="/" className="logo" style={{ textDecoration: 'none', margin: '0 auto', display: 'flex', alignItems: 'center' }}>
-            <svg width="160" height="32" viewBox="0 0 160 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--color-text)' }}>
-              <path d="M16 4C16 4 8 14.5 8 19C8 23.4183 11.5817 27 16 27C20.4183 27 24 23.4183 24 19C24 14.5 16 4 16 4Z" fill="currentColor"/>
-              <text x="36" y="24" fontFamily="var(--font-sans), sans-serif" fontWeight="900" fontSize="24" letterSpacing="-1px" fill="currentColor">
-                DRIPEON
-              </text>
-            </svg>
-          </Link>
+          {/* Center Column - Logo */}
+          <div className="logo-wrapper">
+            <Link href="/" className="logo" style={{ textDecoration: 'none' }}>
+              <svg width="160" height="32" viewBox="0 0 160 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--color-text)' }}>
+                <path d="M16 4C16 4 8 14.5 8 19C8 23.4183 11.5817 27 16 27C20.4183 27 24 23.4183 24 19C24 14.5 16 4 16 4Z" fill="currentColor"/>
+                <text x="36" y="24" fontFamily="var(--font-sans), sans-serif" fontWeight="900" fontSize="24" letterSpacing="-1px" fill="currentColor">
+                  DRIPEON
+                </text>
+              </svg>
+            </Link>
+          </div>
 
-          {/* Icons - Right */}
-          <div className="nav-icons">
-            {mounted && (
+          {/* Right Column */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3rem' }}>
+            {/* Desktop Nav - Right */}
+            <div className="nav-desktop-wrapper hidden md:flex">
+              <div className="nav-links">
+                {rightCategories.map((cat) => (
+                  <div key={cat._id} className="nav-item-wrapper" onMouseEnter={() => setActiveMenu(cat.slug)}>
+                    <Link href={`/collections/${cat.slug}`} className="nav-link-main">{cat.name}</Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Icons - Far Right */}
+            <div className="nav-icons">
+              {mounted && (
+                <button 
+                  className="theme-toggle-desktop"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  aria-label="Toggle Theme" 
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
+                >
+                  {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+                </button>
+              )}
               <button 
-                className="theme-toggle-desktop"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                aria-label="Toggle Theme" 
+                aria-label="Search" 
+                onClick={() => setSearchOpen(true)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
               >
-                {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+                <Search size={22} />
               </button>
-            )}
-            <button 
-              aria-label="Search" 
-              onClick={() => setSearchOpen(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}
-            >
-              <Search size={22} />
-            </button>
-            
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              {isLoaded && isSignedIn ? (
-                <UserButton>
-                  <UserButton.MenuItems>
-                    <UserButton.Link
-                      label="My Orders"
-                      labelIcon={<ShoppingBag size={14} />}
-                      href="/profile/orders"
-                    />
-                    <UserButton.Link
-                      label="Wishlist"
-                      labelIcon={<Heart size={14} />}
-                      href="/profile/wishlist"
-                    />
-                  </UserButton.MenuItems>
-                </UserButton>
-              ) : isLoaded && !isSignedIn ? (
-                <Link href="/login" aria-label="Account">
-                  <User size={22} />
-                </Link>
-              ) : (
-                <div style={{ width: 22, height: 22 }} />
-              )}
-            </div>
+              
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                {isLoaded && isSignedIn ? (
+                  <UserButton>
+                    <UserButton.MenuItems>
+                      <UserButton.Link
+                        label="My Orders"
+                        labelIcon={<ShoppingBag size={14} />}
+                        href="/profile/orders"
+                      />
+                      <UserButton.Link
+                        label="Wishlist"
+                        labelIcon={<Heart size={14} />}
+                        href="/profile/wishlist"
+                      />
+                    </UserButton.MenuItems>
+                  </UserButton>
+                ) : isLoaded && !isSignedIn ? (
+                  <Link href="/login" aria-label="Account">
+                    <User size={22} />
+                  </Link>
+                ) : (
+                  <div style={{ width: 22, height: 22 }} />
+                )}
+              </div>
 
-            <button onClick={openCart} aria-label="Cart" style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
-              <ShoppingCart size={22} />
-              {mounted && cartItems.length > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-6px',
-                  right: '-8px',
-                  backgroundColor: '#000000',
-                  color: '#ffffff',
-                  fontSize: '0.65rem',
-                  fontWeight: 800,
-                  width: '18px',
-                  height: '18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '50%',
-                  border: '2px solid var(--color-bg)'
-                }}>
-                  {cartItems.length}
-                </span>
-              )}
-            </button>
+              <button onClick={openCart} aria-label="Cart" style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+                <ShoppingCart size={22} />
+                {mounted && cartItems.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-8px',
+                    backgroundColor: '#000000',
+                    color: '#ffffff',
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    width: '18px',
+                    height: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    border: '2px solid var(--color-bg)'
+                  }}>
+                    {cartItems.length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Megamenu Overlay */}
+          <AnimatePresence>
+            {activeMenu && categories.find(c => c.slug === activeMenu) && 
+              (categories.find(c => c.slug === activeMenu).columns?.length > 0 || 
+               categories.find(c => c.slug === activeMenu).imageCards?.length > 0) && (
+              <motion.div 
+                className="megamenu-panel"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                onMouseEnter={() => setActiveMenu(activeMenu)}
+              >
+                <div className="container megamenu-container">
+                  <div className="megamenu-columns">
+                    {categories.find(c => c.slug === activeMenu).columns.map((col: any, i: number) => {
+                      if (col.title === "New Column" && col.links.length === 0) return null;
+                      if (col.title === "New Column" && col.links.length === 1 && col.links[0].label === "New Link") return null;
+                      
+                      return (
+                        <div key={i} className="megamenu-col">
+                          <h4>{col.title}</h4>
+                          <ul>
+                            {col.links.map((link: any, j: number) => (
+                              <li key={j}><Link href={link.url}>{link.label}</Link></li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="megamenu-images">
+                    {categories.find(c => c.slug === activeMenu).imageCards?.map((img: any, i: number) => (
+                      <Link key={i} href={img.url} className="megamenu-image-card">
+                        <img src={img.imageUrl} alt={img.title} />
+                        <div className="megamenu-image-text">
+                          <span>{img.title}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Mobile Nav Overlay */}

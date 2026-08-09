@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Loader from "@/components/Loader";
 import Link from "next/link";
 import { Package, Truck, CheckCircle, X, UploadCloud, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
@@ -16,9 +17,11 @@ export default function OrdersPage() {
   // Modal States
   const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [returnModal, setReturnModal] = useState<string | null>(null);
+  const [requestType, setRequestType] = useState<'RETURN' | 'REPLACE'>('RETURN');
   const [reasonMode, setReasonMode] = useState<string>('');
   const [otherReason, setOtherReason] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   // Cloudinary Upload States
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -61,6 +64,8 @@ export default function OrdersPage() {
       });
       if (res.ok) {
         setCancelModal(null);
+        setToastMessage("Order cancelled successfully");
+        setTimeout(() => setToastMessage(null), 4000);
         fetchOrders();
       } else {
         const data = await res.json();
@@ -107,7 +112,9 @@ export default function OrdersPage() {
       }
 
       // 2. Submit Return Request
-      const finalReason = reasonMode === 'Other' ? otherReason : reasonMode;
+      const baseReason = reasonMode === 'Other' ? otherReason : reasonMode;
+      const finalReason = `[${requestType}] ${baseReason}`;
+
       const res = await fetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -116,6 +123,8 @@ export default function OrdersPage() {
       
       if (res.ok) {
         setReturnModal(null);
+        setToastMessage(`Product ${requestType.toLowerCase()} requested successfully`);
+        setTimeout(() => setToastMessage(null), 4000);
         fetchOrders();
       } else {
         const data = await res.json();
@@ -171,7 +180,7 @@ export default function OrdersPage() {
               }}>
                 <div>
                   <p style={{ fontSize: '0.8rem', color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>Order ID</p>
-                  <p style={{ fontSize: '1rem', color: 'var(--color-text)', fontWeight: 800 }}>{order._id}</p>
+                  <p style={{ fontSize: '1rem', color: 'var(--color-text)', fontWeight: 800 }}>#{order.orderNumber || parseInt(order._id.slice(-6), 16).toString().padStart(8, '0')}</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.8rem', color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.2rem' }}>Date</p>
@@ -233,10 +242,10 @@ export default function OrdersPage() {
                   )}
                   {order.orderStatus === 'DELIVERED' && (
                     <button 
-                      onClick={() => { setReturnModal(order._id); setReasonMode(''); setOtherReason(''); setImageFile(null); setImagePreview(null); }}
+                      onClick={() => { setReturnModal(order._id); setRequestType('RETURN'); setReasonMode(''); setOtherReason(''); setImageFile(null); setImagePreview(null); }}
                       style={{ padding: '0.8rem 2rem', backgroundColor: 'var(--color-text)', border: 'none', color: 'var(--color-bg)', fontWeight: 800, cursor: 'pointer', borderRadius: '4px' }}
                     >
-                      RETURN ORDER
+                      RETURN / REPLACE
                     </button>
                   )}
                 </div>
@@ -295,8 +304,23 @@ export default function OrdersPage() {
         <div style={modalBackdropStyle}>
           <div style={modalBoxStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Return Order</h3>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Request Return / Replace</h3>
               <button onClick={() => setReturnModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text)' }}><X size={24} /></button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+              <button 
+                onClick={() => setRequestType('RETURN')}
+                style={{ flex: 1, padding: '1rem', border: `2px solid ${requestType === 'RETURN' ? 'var(--color-text)' : 'var(--color-border)'}`, backgroundColor: requestType === 'RETURN' ? 'var(--color-text)' : 'transparent', color: requestType === 'RETURN' ? 'var(--color-bg)' : 'var(--color-text)', fontWeight: 800, borderRadius: '4px', cursor: 'pointer' }}
+              >
+                RETURN FOR REFUND
+              </button>
+              <button 
+                onClick={() => setRequestType('REPLACE')}
+                style={{ flex: 1, padding: '1rem', border: `2px solid ${requestType === 'REPLACE' ? 'var(--color-text)' : 'var(--color-border)'}`, backgroundColor: requestType === 'REPLACE' ? 'var(--color-text)' : 'transparent', color: requestType === 'REPLACE' ? 'var(--color-bg)' : 'var(--color-text)', fontWeight: 800, borderRadius: '4px', cursor: 'pointer' }}
+              >
+                REPLACE ITEM
+              </button>
             </div>
             
             <p style={{ marginBottom: '1rem', color: '#888' }}>Upload a photo of the product (with tags):</p>
@@ -341,13 +365,45 @@ export default function OrdersPage() {
             <button 
               onClick={() => handleReturnSubmit(returnModal)}
               disabled={isProcessing}
-              style={{ width: '100%', padding: '1rem', backgroundColor: 'var(--color-text)', color: 'var(--color-bg)', border: 'none', fontWeight: 800, cursor: isProcessing ? 'not-allowed' : 'pointer', borderRadius: '4px' }}
+              className="btn-primary"
+              style={{ width: '100%', padding: '1rem', border: 'none', cursor: isProcessing ? 'not-allowed' : 'pointer', borderRadius: '4px' }}
             >
-              {isProcessing ? 'SUBMITTING...' : 'REQUEST RETURN'}
+              {isProcessing ? "PROCESSING..." : `SUBMIT ${requestType} REQUEST`}
             </button>
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            style={{
+              position: 'fixed',
+              bottom: '2rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#2e7d32', // Green success color
+              color: '#fff',
+              padding: '1rem 2rem',
+              borderRadius: '50px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.8rem',
+              boxShadow: '0 10px 30px rgba(46, 125, 50, 0.3)',
+              zIndex: 9999,
+              letterSpacing: '0.5px'
+            }}
+          >
+            <CheckCircle size={20} />
+            {toastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

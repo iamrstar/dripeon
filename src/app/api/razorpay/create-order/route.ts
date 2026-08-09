@@ -21,7 +21,15 @@ export async function POST(req: Request) {
 
     // Verify prices from MongoDB
     for (const item of products) {
-      const dbProduct = await Product.findById(item.product_id);
+      const isObjectId = item.product_id && item.product_id.match(/^[0-9a-fA-F]{24}$/);
+      const query = isObjectId ? { _id: item.product_id } : { 
+        $or: [
+          { slug: item.product_id },
+          { name: item.name } // Ultimate fallback for corrupt cart data
+        ] 
+      };
+      
+      const dbProduct = await Product.findOne(query);
       if (!dbProduct) {
         return NextResponse.json({ message: `Product not found: ${item.name}` }, { status: 404 });
       }

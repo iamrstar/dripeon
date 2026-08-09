@@ -18,6 +18,7 @@ export interface IProduct extends Document {
   discount: number;
   category: string;
   subcategory: string;
+  gender?: string;
   images: string[];
   sizes: string[];
   inventory?: Record<string, number>;
@@ -32,6 +33,7 @@ export interface IProduct extends Document {
   reviews: IReview[];
   averageRating: number;
   numReviews: number;
+  enquiries?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,11 +81,14 @@ const ProductSchema: Schema = new Schema(
     category: {
       type: String,
       required: [true, 'Please provide a category'],
-      enum: ['topwear', 'bottomwear', 'accessories'],
     },
     subcategory: {
       type: String,
       default: '',
+    },
+    gender: {
+      type: String,
+      default: 'Unisex',
     },
     images: {
       type: [String],
@@ -152,6 +157,10 @@ const ProductSchema: Schema = new Schema(
       type: Number,
       default: 0,
     },
+    enquiries: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
@@ -163,4 +172,7 @@ ProductSchema.pre('save', function () {
   }
 });
 
-export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+export default mongoose.model<IProduct>('Product', ProductSchema);

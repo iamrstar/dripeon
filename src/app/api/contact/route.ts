@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { auth } from "@clerk/nextjs/server";
 
 export async function POST(request: Request) {
@@ -36,34 +36,30 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_APP_PASSWORD) {
-      console.error("Missing EMAIL_USER or EMAIL_APP_PASSWORD in environment variables.");
+    if (!process.env.RESEND_API_KEY) {
+      console.error("Missing RESEND_API_KEY in environment variables.");
       return NextResponse.json({ error: 'Email service is currently unavailable. Please try again later or use our contact numbers.' }, { status: 500 });
     }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD,
-      },
-    });
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: 'info.dripeon@gmail.com', // Sent to the store admin
+    const data = await resend.emails.send({
+      from: 'Dripeon Contact <onboarding@resend.dev>',
+      to: 'info.dripeon@gmail.com',
       subject: `New Contact Message from ${name}`,
       text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
       attachments: attachments,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Contact API error:', error);
     // Provide a user-friendly error message instead of raw technical errors
-    let errorMessage = 'Failed to send message. Please try again later.';
+    let errorMessage = error.message || 'Failed to send message. Please try again later.';
     if (error.code === 'EAUTH' || error.message?.includes('credentials')) {
        errorMessage = 'Email service configuration error. Please contact us via phone.';
     }

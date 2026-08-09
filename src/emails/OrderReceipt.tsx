@@ -52,7 +52,7 @@ export const OrderReceipt = ({
               We will notify you with the tracking details as soon as it ships.
             </Text>
             <Text style={orderIdStyle}>
-              Order ID: #{orderId.substring(0, 8).toUpperCase()}
+              Order ID: #{orderId}
             </Text>
             
             <Hr style={hr} />

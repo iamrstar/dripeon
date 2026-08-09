@@ -29,16 +29,20 @@ export default function PaymentPage() {
   }, []);
 
   useEffect(() => {
-    if (cartItems.length === 0 && !isSuccess) {
+    if (isSuccess) return; // Prevent redirecting away if payment was successful
+
+    if (cartItems.length === 0) {
       router.push('/');
+      return;
     }
+
     const savedAddress = localStorage.getItem("dripeon_shipping_address");
     if (savedAddress) {
       setAddress(JSON.parse(savedAddress));
     } else {
       router.push('/checkout');
     }
-  }, [cartItems, router]);
+  }, [cartItems, router, isSuccess]);
 
   const handlePayment = async () => {
     setLoading(true);
@@ -98,8 +102,8 @@ export default function PaymentPage() {
         });
         
         const createData = await createRes.json();
-        if (!createData.success) {
-          alert("Could not initialize payment. Please try again.");
+        if (!createRes.ok || !createData.success) {
+          alert(createData.message || "Could not initialize payment. Please try again.");
           setLoading(false);
           return;
         }
