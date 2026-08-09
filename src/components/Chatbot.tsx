@@ -29,6 +29,7 @@ export default function Chatbot() {
               footer: '',
               getStarted: 'New Conversation',
               inputPlaceholder: 'Type your question...',
+              closeButtonTooltip: 'Close Chat',
             },
           },
         });
