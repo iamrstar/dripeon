@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Package, Truck, CheckCircle, AlertCircle, Loader2, ArrowLeft, Search, MapPin, CalendarClock, ShoppingBag } from "lucide-react";
+import { Package, Truck, CheckCircle, AlertCircle, Loader2, ArrowLeft, Search, MapPin, CalendarClock, ShoppingBag, RefreshCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -200,7 +200,7 @@ export default function TrackOrder() {
                   const status = getStepStatus(index, trackingData.orderStatus);
                   const Icon = step.icon;
                   const isCancelledStep = status === 'cancelled_step';
-                  const isCancelledState = status === 'cancelled';
+                  const isCancelledState = trackingData.orderStatus.includes('CANCELLED');
                   const isCurrent = status === 'current';
                   const isCompleted = status === 'completed';
                   
@@ -227,9 +227,7 @@ export default function TrackOrder() {
                     titleColor = '#e53935';
                   }
                   
-                  // Hide remaining standard steps if returned/cancelled in the standard array
-                  if (isCancelledState && index > 0) return null;
-
+                  // Removed obsolete hiding logic
                   return (
                     <motion.div 
                       key={index}
