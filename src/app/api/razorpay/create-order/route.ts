@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       if (!dbProduct) {
         return NextResponse.json({ message: `Product not found: ${item.name}` }, { status: 404 });
       }
-      calculatedTotal += (dbProduct.salePrice || dbProduct.price) * item.quantity;
+      calculatedTotal += (dbProduct.salePrice || dbProduct.originalPrice) * item.quantity;
     }
 
     // Apply Dynamic Coupon Logic
