@@ -1007,7 +1007,7 @@ a:hover {
   font-size: 0.85rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #111;
+  color: var(--color-text);
 }
 
 .product-price {
