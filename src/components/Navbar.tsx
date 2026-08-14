@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ShoppingCart, Menu, X, User, Search, Sun, Moon, Plus, Minus, ShoppingBag, Heart } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -88,14 +89,24 @@ export default function Navbar() {
           </div>
 
           {/* Center Column - Logo */}
-          <div className="logo-wrapper">
-            <Link href="/" className="logo" style={{ textDecoration: 'none' }}>
-              <svg width="160" height="32" viewBox="0 0 160 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color: 'var(--color-text)' }}>
-                <path d="M16 4C16 4 8 14.5 8 19C8 23.4183 11.5817 27 16 27C20.4183 27 24 23.4183 24 19C24 14.5 16 4 16 4Z" fill="currentColor"/>
-                <text x="36" y="24" fontFamily="var(--font-sans), sans-serif" fontWeight="900" fontSize="24" letterSpacing="-1px" fill="currentColor">
-                  DRIPEON
-                </text>
-              </svg>
+          <div className="logo-wrapper absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:transform-none" style={{ zIndex: 50 }}>
+            <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+              {mounted ? (
+                <Image 
+                  src="/dripeon-logo.png" 
+                  alt="Dripeon Logo" 
+                  width={160} 
+                  height={50} 
+                  style={{ 
+                    objectFit: 'contain', 
+                    filter: theme === 'dark' ? 'invert(1)' : 'none',
+                    transition: 'filter 0.3s ease'
+                  }} 
+                  priority
+                />
+              ) : (
+                <div style={{ width: 160, height: 50 }} />
+              )}
             </Link>
           </div>
 

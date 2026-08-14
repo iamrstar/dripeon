@@ -5,6 +5,7 @@ import Footer from '@/components/Footer'
 import { Providers } from '@/components/Providers'
 import MiniCart from '@/components/MiniCart'
 import Chatbot from '@/components/Chatbot'
+import SideGlitchBorders from '@/components/SideGlitchBorders'
 
 import { ClerkProvider } from '@clerk/nextjs'
 
@@ -106,6 +107,7 @@ export default function RootLayout({
         <body suppressHydrationWarning>
           <Providers>
             <Navbar />
+            <SideGlitchBorders />
             <main>{children}</main>
             <Footer />
             <MiniCart />

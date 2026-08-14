@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, X, Minus, Plus } from "lucide-react";
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, removeFromCart, updateQuantity, appliedCoupon, discountAmount, applyCoupon, removeCoupon } = useCart();
@@ -166,12 +166,12 @@ export default function CheckoutPage() {
                     <p style={{ color: '#888', margin: 0, fontSize: '0.85rem', fontWeight: 600 }}>Size: {item.size}</p>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.8rem' }}>
-                      <div style={{ display: 'flex', border: '1px solid var(--color-border)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <button onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)} style={qtyBtnStyle}>-</button>
-                        <span style={{ padding: '0.1rem 0.6rem', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', borderLeft: '1px solid var(--color-border)', borderRight: '1px solid var(--color-border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', height: '32px' }}>
+                        <button onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)} style={qtyBtnStyle}><Minus size={14} /></button>
+                        <span style={{ width: '32px', textAlign: 'center', fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text)' }}>
                           {item.quantity}
                         </span>
-                        <button onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)} style={qtyBtnStyle}>+</button>
+                        <button onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)} style={qtyBtnStyle}><Plus size={14} /></button>
                       </div>
                       <button onClick={() => removeFromCart(item.id, item.size)} style={{ background: 'none', border: 'none', color: '#ff4444', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}>
                         REMOVE
@@ -287,10 +287,13 @@ const inputStyle: React.CSSProperties = {
 };
 
 const qtyBtnStyle: React.CSSProperties = {
-  padding: '0.3rem 0.6rem', 
+  width: '32px',
+  height: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   background: 'transparent', 
   border: 'none', 
   cursor: 'pointer', 
   color: 'var(--color-text)',
-  fontWeight: 800
 };

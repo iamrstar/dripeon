@@ -89,23 +89,24 @@ export default function MiniCart() {
                           <p style={{ margin: '0.2rem 0 0', fontSize: '0.9rem', fontWeight: 600 }}>₹{item.price.toLocaleString()}</p>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--color-border)', borderRadius: '4px', height: '28px' }}>
                             <button 
                               onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}
-                              style={{ background: 'none', border: 'none', padding: '0.2rem 0.5rem', cursor: 'pointer' }}
+                              style={{ background: 'none', border: 'none', width: '28px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--color-text)' }}
                             >
                               <Minus size={14} />
                             </button>
-                            <span style={{ fontSize: '0.9rem', width: '20px', textAlign: 'center', fontWeight: 500 }}>
+                            <span style={{ fontSize: '0.9rem', width: '24px', textAlign: 'center', fontWeight: 600, color: 'var(--color-text)' }}>
                               {item.quantity}
                             </span>
                             <button 
                               onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
                               disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
                               style={{ 
-                                background: 'none', border: 'none', padding: '0.2rem 0.5rem', 
+                                background: 'none', border: 'none', width: '28px', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', 
                                 cursor: (item.maxStock !== undefined && item.quantity >= item.maxStock) ? 'not-allowed' : 'pointer',
-                                opacity: (item.maxStock !== undefined && item.quantity >= item.maxStock) ? 0.3 : 1
+                                opacity: (item.maxStock !== undefined && item.quantity >= item.maxStock) ? 0.3 : 1,
+                                color: 'var(--color-text)'
                               }}
                             >
                               <Plus size={14} />
