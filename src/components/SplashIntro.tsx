@@ -4,39 +4,37 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ==============================================
-   DRIPEON — STREET STYLE SPLASH INTRO
-   Full-screen animated intro on first visit.
+   DRIPEON — PREMIUM SPLASH INTRO
+   Full-screen clean animated intro on first visit.
    Shows once per session (sessionStorage).
    ============================================== */
 
 export default function SplashIntro({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0);
-  // Phase 0: Initial black screen
-  // Phase 1: Glitch lines flash
-  // Phase 2: Brand name reveals
-  // Phase 3: Tagline appears
-  // Phase 4: Exit animation
+  // Phase 0: Initial dark screen
+  // Phase 1: Brand reveal
+  // Phase 2: Tagline appears
+  // Phase 3: Smooth exit curtain
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 300),   // Glitch lines
-      setTimeout(() => setPhase(2), 800),   // Brand reveal
-      setTimeout(() => setPhase(3), 2200),  // Tagline
-      setTimeout(() => setPhase(4), 3800),  // Start exit
-      setTimeout(() => onComplete(), 4600), // Fully gone
+      setTimeout(() => setPhase(1), 200),   // Brand reveal
+      setTimeout(() => setPhase(2), 1300),  // Tagline
+      setTimeout(() => setPhase(3), 2700),  // Start exit
+      setTimeout(() => onComplete(), 3500), // Fully gone
     ];
     return () => timers.forEach(clearTimeout);
   }, [onComplete]);
 
   // Allow skip on click
   const handleSkip = useCallback(() => {
-    setPhase(4);
+    setPhase(3);
     setTimeout(() => onComplete(), 600);
   }, [onComplete]);
 
   return (
     <AnimatePresence>
-      {phase < 5 && (
+      {phase < 4 && (
         <motion.div
           onClick={handleSkip}
           style={{
@@ -50,28 +48,16 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           animate={{
-            y: phase >= 4 ? "-100%" : "0%",
+            y: phase >= 3 ? "-100%" : "0%",
             transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] },
           }}
         >
-          {/* Scan lines overlay */}
+          {/* Subtle grain overlay */}
           <div
             style={{
               position: "absolute",
               inset: 0,
-              backgroundImage:
-                "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.015) 2px, rgba(255,255,255,0.015) 4px)",
-              zIndex: 1,
-              pointerEvents: "none",
-            }}
-          />
-
-          {/* Noise grain overlay */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: 0.04,
+              opacity: 0.03,
               zIndex: 1,
               pointerEvents: "none",
               background:
@@ -79,44 +65,13 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
             }}
           />
 
-          {/* Glitch horizontal lines */}
-          {phase >= 1 && phase < 4 && (
-            <>
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={`line-${i}`}
-                  initial={{ scaleX: 0, opacity: 0 }}
-                  animate={{
-                    scaleX: [0, 1, 1, 0],
-                    opacity: [0, 1, 0.6, 0],
-                  }}
-                  transition={{
-                    duration: 0.5,
-                    delay: i * 0.06,
-                    ease: "easeOut",
-                  }}
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    right: 0,
-                    top: `${15 + i * 13}%`,
-                    height: "1px",
-                    backgroundColor: "rgba(255,255,255,0.3)",
-                    transformOrigin: "left",
-                    zIndex: 2,
-                  }}
-                />
-              ))}
-            </>
-          )}
-
           {/* Corner brackets */}
-          {phase >= 2 && (
+          {phase >= 1 && (
             <>
               {/* Top-left */}
               <motion.div
-                initial={{ opacity: 0, scale: 1.5 }}
-                animate={{ opacity: 0.3, scale: 1 }}
+                initial={{ opacity: 0, scale: 1.3 }}
+                animate={{ opacity: 0.35, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.1 }}
                 style={{
                   position: "absolute",
@@ -131,8 +86,8 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
               />
               {/* Bottom-right */}
               <motion.div
-                initial={{ opacity: 0, scale: 1.5 }}
-                animate={{ opacity: 0.3, scale: 1 }}
+                initial={{ opacity: 0, scale: 1.3 }}
+                animate={{ opacity: 0.35, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
                 style={{
                   position: "absolute",
@@ -160,103 +115,13 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
               zIndex: 5,
             }}
           >
-            {phase >= 2 && (
+            {phase >= 1 && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 style={{ position: "relative" }}
               >
-                {/* Glitch ghost layers */}
-                <motion.h1
-                  animate={{
-                    x: [0, -3, 5, -2, 0, 3, -5, 0],
-                    opacity: [0.3, 0.5, 0.2, 0.4, 0.3],
-                  }}
-                  transition={{
-                    duration: 0.3,
-                    repeat: phase < 4 ? Infinity : 0,
-                    repeatDelay: 2,
-                  }}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    fontSize: "clamp(4rem, 15vw, 12rem)",
-                    fontWeight: 900,
-                    letterSpacing: "-0.03em",
-                    color: "transparent",
-                    WebkitTextStroke: "1px rgba(255,255,255,0.15)",
-                    userSelect: "none",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  DRIPEON
-                </motion.h1>
-
-                {/* Red glitch offset */}
-                <motion.h1
-                  animate={{
-                    x: [0, 4, -6, 2, 0],
-                    clipPath: [
-                      "inset(0 0 80% 0)",
-                      "inset(30% 0 50% 0)",
-                      "inset(60% 0 10% 0)",
-                      "inset(0 0 80% 0)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 0.15,
-                    repeat: phase < 4 ? Infinity : 0,
-                    repeatDelay: 3,
-                  }}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: "2px",
-                    fontSize: "clamp(4rem, 15vw, 12rem)",
-                    fontWeight: 900,
-                    letterSpacing: "-0.03em",
-                    color: "rgba(255,50,50,0.4)",
-                    userSelect: "none",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  DRIPEON
-                </motion.h1>
-
-                {/* Cyan glitch offset */}
-                <motion.h1
-                  animate={{
-                    x: [0, -4, 6, -2, 0],
-                    clipPath: [
-                      "inset(70% 0 0 0)",
-                      "inset(10% 0 60% 0)",
-                      "inset(40% 0 30% 0)",
-                      "inset(70% 0 0 0)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 0.15,
-                    repeat: phase < 4 ? Infinity : 0,
-                    repeatDelay: 3.5,
-                    delay: 0.05,
-                  }}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: "-2px",
-                    fontSize: "clamp(4rem, 15vw, 12rem)",
-                    fontWeight: 900,
-                    letterSpacing: "-0.03em",
-                    color: "rgba(50,200,255,0.3)",
-                    userSelect: "none",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  DRIPEON
-                </motion.h1>
-
                 {/* Main text */}
                 <motion.h1
                   initial={{ clipPath: "inset(0 100% 0 0)" }}
@@ -281,10 +146,10 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
             )}
 
             {/* Tagline */}
-            {phase >= 3 && (
+            {phase >= 2 && (
               <motion.p
                 initial={{ opacity: 0, y: 10, letterSpacing: "0.5em" }}
-                animate={{ opacity: 0.6, y: 0, letterSpacing: "0.3em" }}
+                animate={{ opacity: 0.7, y: 0, letterSpacing: "0.3em" }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 style={{
                   color: "#fff",
@@ -299,14 +164,14 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
             )}
 
             {/* Tap to enter hint */}
-            {phase >= 3 && (
+            {phase >= 2 && (
               <motion.span
                 initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 0.4, 0.4, 0] }}
+                animate={{ opacity: [0, 0.45, 0.45, 0] }}
                 transition={{
                   duration: 2,
                   repeat: Infinity,
-                  delay: 0.5,
+                  delay: 0.3,
                 }}
                 style={{
                   position: "absolute",
@@ -324,14 +189,14 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
           </div>
 
           {/* Horizontal accent line */}
-          {phase >= 2 && (
+          {phase >= 1 && (
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{
                 duration: 1.2,
                 ease: [0.76, 0, 0.24, 1],
-                delay: 0.3,
+                delay: 0.2,
               }}
               style={{
                 position: "absolute",
@@ -351,7 +216,7 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
           {/* Loading progress bar at bottom */}
           <motion.div
             initial={{ scaleX: 0 }}
-            animate={{ scaleX: phase >= 4 ? 1 : phase / 4 }}
+            animate={{ scaleX: phase >= 3 ? 1 : phase / 3 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             style={{
               position: "absolute",
