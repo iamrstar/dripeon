@@ -5,7 +5,9 @@ import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Coupon from "@/models/Coupon";
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { OrderReceipt } from "@/emails/OrderReceipt";
+import { render } from "@react-email/components";
 import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
@@ -125,31 +127,62 @@ export async function POST(req: Request) {
 
     const order = await Order.create(orderData);
 
-    // 3. Decrease stock for each product
-    for (const item of products) {
-      await Product.findByIdAndUpdate(item.product_id, {
-        $inc: { stock: -item.quantity }
-      });
-    }
-
-    // 4. Send confirmation email
+    // Send confirmation email
     if (shippingAddress?.email) {
-      try {
-        await resend.emails.send({
-          from: "Dripeon Orders <orders@dripeon.com>",
-          to: shippingAddress.email,
-          subject: `Order Confirmed: #${order.orderNumber}`,
-          react: OrderReceipt({
-            orderId: order.orderNumber,
-            shippingAddress,
-            products: secureProducts,
-            totalAmount: calculatedTotal
-          })
-        });
-        
-        console.log(`🚀 Resend Order email sent to: ${shippingAddress.email}`);
-      } catch (emailError) {
-        console.error("Failed to send Resend email, but order was created:", emailError);
+      let emailSent = false;
+
+      // 1. Try Nodemailer (Gmail SMTP) if configured
+      if (process.env.EMAIL_USER && process.env.EMAIL_APP_PASSWORD) {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_APP_PASSWORD,
+            },
+          });
+
+          const emailHtml = await render(
+            OrderReceipt({
+              orderId: order.orderNumber,
+              shippingAddress,
+              products: secureProducts,
+              totalAmount: calculatedTotal,
+            })
+          );
+
+          await transporter.sendMail({
+            from: `"Dripeon Team" <${process.env.EMAIL_USER}>`,
+            to: shippingAddress.email,
+            subject: `Order Confirmed: #${order.orderNumber}`,
+            html: emailHtml,
+          });
+
+          emailSent = true;
+          console.log(`🚀 Nodemailer Order email sent to: ${shippingAddress.email}`);
+        } catch (nodemailerError) {
+          console.error("Nodemailer failed to send order email:", nodemailerError);
+        }
+      }
+
+      // 2. Fallback to Resend if Nodemailer was not used/failed and API key is set
+      if (!emailSent && process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_dummy') {
+        try {
+          await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || "Dripeon Orders <orders@dripeon.com>",
+            to: shippingAddress.email,
+            subject: `Order Confirmed: #${order.orderNumber}`,
+            react: OrderReceipt({
+              orderId: order.orderNumber,
+              shippingAddress,
+              products: secureProducts,
+              totalAmount: calculatedTotal,
+            }),
+          });
+          console.log(`🚀 Resend Order email sent to: ${shippingAddress.email}`);
+        } catch (emailError) {
+          console.error("Failed to send Resend email, but order was created:", emailError);
+        }
       }
     }
 
