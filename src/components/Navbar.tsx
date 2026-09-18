@@ -91,22 +91,14 @@ export default function Navbar() {
           {/* Center Column - Logo */}
           <div className="logo-wrapper absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:transform-none" style={{ zIndex: 50 }}>
             <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-              {mounted ? (
-                <Image 
-                  src="/dripeon-logo.png" 
-                  alt="Dripeon Logo" 
-                  width={160} 
-                  height={50} 
-                  style={{ 
-                    objectFit: 'contain', 
-                    filter: theme === 'dark' ? 'invert(1)' : 'none',
-                    transition: 'filter 0.3s ease'
-                  }} 
-                  priority
-                />
-              ) : (
-                <div style={{ width: 160, height: 50 }} />
-              )}
+              <Image 
+                src="/dripeon-logo.png" 
+                alt="Dripeon Logo" 
+                width={160} 
+                height={50} 
+                className="navbar-brand-logo"
+                priority
+              />
             </Link>
           </div>
 

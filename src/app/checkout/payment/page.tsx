@@ -14,7 +14,7 @@ export default function PaymentPage() {
   const [address, setAddress] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'cod'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi'>('card');
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
@@ -64,32 +64,12 @@ export default function PaymentPage() {
         discountAmount: discountAmount
       };
 
-      if (paymentMethod === 'cod') {
-        // --- CASH ON DELIVERY FLOW ---
-        const res = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderData)
-        });
-
-        if (res.ok) {
-          setIsSuccess(true);
-          const data = await res.json();
-          setTimeout(() => {
-            clearCart();
-            localStorage.removeItem("dripeon_shipping_address");
-          }, 100);
-          router.push(`/checkout/success?orderId=${data.orderId}`);
-        } else {
-          alert("Order failed. Please try again.");
-        }
-      } else {
-        // --- RAZORPAY FLOW (Card / UPI) ---
-        if (!scriptLoaded) {
-          alert("Payment gateway is still loading. Please try again in a few seconds.");
-          setLoading(false);
-          return;
-        }
+      // --- RAZORPAY FLOW (Card / UPI) ---
+      if (!scriptLoaded) {
+        alert("Payment gateway is still loading. Please try again in a few seconds.");
+        setLoading(false);
+        return;
+      }
 
         // 1. Create Order on Backend
         const createRes = await fetch('/api/razorpay/create-order', {
@@ -167,7 +147,6 @@ export default function PaymentPage() {
           setLoading(false);
         });
         rzp1.open();
-      }
     } catch (error) {
       console.error("Checkout error:", error);
       alert("An error occurred. Please try again.");
@@ -250,21 +229,46 @@ export default function PaymentPage() {
                 <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" style={{ height: '20px' }} />
               </label>
 
-              {/* COD Option */}
-              <label style={{ display: 'flex', alignItems: 'center', padding: '1.5rem', cursor: 'pointer', backgroundColor: paymentMethod === 'cod' ? 'rgba(0,0,0,0.02)' : 'transparent', transition: 'all 0.2s' }}>
+              {/* COD Option - Disabled */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  padding: '1.5rem', 
+                  cursor: 'not-allowed', 
+                  opacity: 0.55,
+                  backgroundColor: 'rgba(0,0,0,0.02)',
+                  userSelect: 'none'
+                }}
+              >
                 <input 
                   type="radio" 
                   name="payment" 
                   value="cod" 
-                  checked={paymentMethod === 'cod'} 
-                  onChange={() => setPaymentMethod('cod')} 
-                  style={{ accentColor: 'var(--color-text)', transform: 'scale(1.2)', marginRight: '1rem' }}
+                  disabled
+                  checked={false} 
+                  style={{ accentColor: 'var(--color-text)', transform: 'scale(1.2)', marginRight: '1rem', cursor: 'not-allowed' }}
                 />
                 <div style={{ flex: 1 }}>
-                  <span style={{ fontWeight: 700, display: 'block' }}>Cash on Delivery (COD)</span>
-                  <span style={{ fontSize: '0.8rem', color: '#888' }}>Pay when your order arrives</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 700, display: 'block', color: 'var(--color-text)' }}>Cash on Delivery (COD)</span>
+                    <span style={{ 
+                      fontSize: '0.68rem', 
+                      fontWeight: 800, 
+                      padding: '2px 8px', 
+                      borderRadius: '4px', 
+                      backgroundColor: 'rgba(239, 68, 68, 0.12)', 
+                      color: '#ef4444', 
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Unavailable
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#888' }}>Cash on Delivery is currently unavailable. Please pay online via UPI or Card.</span>
                 </div>
-              </label>
+              </div>
             </div>
           </motion.div>
 

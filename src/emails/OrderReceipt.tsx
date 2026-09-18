@@ -6,7 +6,6 @@ import {
   Container,
   Section,
   Text,
-  Img,
   Hr,
   Row,
   Column,
@@ -48,7 +47,7 @@ export const OrderReceipt = ({
               Hi {shippingAddress?.name || 'there'},
             </Text>
             <Text style={paragraph}>
-              Thank you for your purchase! We've received your payment and are getting your order ready to be shipped. 
+              Thank you for your purchase! We have received your payment and are getting your order ready to be shipped. 
               We will notify you with the tracking details as soon as it ships.
             </Text>
             <Text style={orderIdStyle}>

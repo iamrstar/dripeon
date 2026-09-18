@@ -76,7 +76,7 @@ export default function RootLayout({
                   '@type': 'Organization',
                   name: 'Dripeon',
                   url: 'https://dripeon.com',
-                  logo: 'https://dripeon.com/logo.png',
+                  logo: 'https://dripeon.com/dripeon-logo.png',
                   sameAs: [
                     'https://instagram.com/dripeon',
                     'https://twitter.com/dripeon',

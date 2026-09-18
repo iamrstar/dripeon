@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCart } from '@/context/CartContext';
-import { Loader2 } from 'lucide-react';
+import { useWishlist } from '@/context/WishlistContext';
+import { Loader2, Heart } from 'lucide-react';
 import SplashIntro from '@/components/SplashIntro';
 
 /* ============================
@@ -131,6 +132,7 @@ function BrandStatement() {
    ============================ */
 export default function Home() {
   const { addToCart, openCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [sizeSelectMode, setSizeSelectMode] = useState<string | null>(null);
   const [fetchedArrivals, setFetchedArrivals] = useState<any[]>([]);
@@ -344,7 +346,22 @@ export default function Home() {
                         {isOnSale && <span className="product-badge" style={{ backgroundColor: '#e53935' }}>SAVE {discountPercent}%</span>}
                         {!isOnSale && product.featured && <span className="product-badge" style={{ backgroundColor: '#000' }}>FEATURED</span>}
 
-                        <button className="product-wishlist" aria-label="Add to wishlist" style={{ fontSize: '1.5rem', zIndex: 10 }}>♡</button>
+                        <button 
+                          className="product-wishlist" 
+                          aria-label="Add to wishlist" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleWishlist(product._id || product.slug);
+                          }}
+                          style={{ zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <Heart 
+                            size={20} 
+                            color={isInWishlist(product._id || product.slug) ? '#e53935' : 'var(--color-text)'} 
+                            fill={isInWishlist(product._id || product.slug) ? '#e53935' : 'none'} 
+                          />
+                        </button>
 
                         <Link href={productUrl} style={{ display: 'block', position: 'absolute', inset: 0, zIndex: 1 }}>
                           <Image
