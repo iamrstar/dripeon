@@ -17,7 +17,12 @@ export default function Navbar() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [expandedMobileMenu, setExpandedMobileMenu] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([
+    { _id: 'cat-topwear', name: 'Topwear', slug: 'topwear' },
+    { _id: 'cat-bottomwear', name: 'Bottomwear', slug: 'bottomwear' },
+    { _id: 'cat-accessories', name: 'Accessories', slug: 'accessories' },
+    { _id: 'cat-new-arrivals', name: 'New Arrivals', slug: 'new-arrivals' },
+  ]);
   const [marqueeText, setMarqueeText] = useState("FREE SHIPPING ON ALL ORDERS OVER ₹999");
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -29,7 +34,7 @@ export default function Navbar() {
     fetch('/api/categories')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setCategories(data);
+        if (Array.isArray(data) && data.length > 0) setCategories(data);
       })
       .catch(err => console.error('Failed to load categories', err));
 

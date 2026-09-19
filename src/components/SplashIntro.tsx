@@ -18,10 +18,10 @@ export default function SplashIntro({ onComplete }: { onComplete: () => void }) 
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 200),   // Brand reveal
-      setTimeout(() => setPhase(2), 1300),  // Tagline
-      setTimeout(() => setPhase(3), 2700),  // Start exit
-      setTimeout(() => onComplete(), 3500), // Fully gone
+      setTimeout(() => setPhase(1), 100),   // Brand reveal
+      setTimeout(() => setPhase(2), 700),   // Tagline
+      setTimeout(() => setPhase(3), 1400),  // Start exit curtain
+      setTimeout(() => onComplete(), 1900), // Fully gone
     ];
     return () => timers.forEach(clearTimeout);
   }, [onComplete]);

@@ -140,22 +140,19 @@ export default function Home() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLElement>(null);
   const [showSplash, setShowSplash] = useState(false);
-  const [pageReady, setPageReady] = useState(false);
+  const [pageReady, setPageReady] = useState(true);
 
   // Show splash only once per session
   useEffect(() => {
     const hasSeenSplash = sessionStorage.getItem('dripeon-splash-seen');
     if (!hasSeenSplash) {
       setShowSplash(true);
-    } else {
-      setPageReady(true);
     }
   }, []);
 
   const handleSplashComplete = useCallback(() => {
     sessionStorage.setItem('dripeon-splash-seen', 'true');
     setShowSplash(false);
-    setPageReady(true);
   }, []);
 
   // Fetch real products
@@ -204,9 +201,9 @@ export default function Home() {
       </AnimatePresence>
 
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: pageReady ? 1 : 0 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
+        initial={{ opacity: 1 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
       >
       {/* ===== CINEMATIC HERO ===== */}
       <section
